@@ -22,7 +22,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97.1"
+    version$ = "0.97.2"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -396,6 +396,8 @@ FUNCTION PBMAIN () AS LONG
                     pitch&(8) = VAL(param(setting$,1))
                 CASE "PSG3"
                     pitch&(9) = VAL(param(setting$,1))
+                CASE "PSGN"
+                    pitch&(10) = VAL(param(setting$,1))
                 END SELECT
         END IF
 
