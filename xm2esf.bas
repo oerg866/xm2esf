@@ -19,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97.3"
+    version$ = "0.97.4"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -230,7 +230,7 @@ FUNCTION PBMAIN () AS LONG
     ' This is the XIF file parser. It is long, andthe coding style is probably pretty bad. But! it works :P
     ' The error handler is not very intelligent yet. But, it'll be, sooner or later. Probably later =P
 
-    WHILE setting$ <> "[Instruments]"
+    WHILE LCASE$(setting$) <> "[Instruments]"
         LINE INPUT #1, setting$
         IF MID$(setting$, 1, 1) <> "#" THEN
            SELECT CASE spleft(setting$)
@@ -343,7 +343,7 @@ FUNCTION PBMAIN () AS LONG
 
     'INSTRUMENT ASSIGNMENTS
 
-    WHILE setting$ <> "[Pitch]"
+    WHILE LCASE$(setting$) <> "[pitch]"
 
         IF MID$(setting$,1,1) <> "#" THEN
 
@@ -369,7 +369,7 @@ FUNCTION PBMAIN () AS LONG
 
 
 
-    WHILE setting$ <> "[Volume]"
+    WHILE LCASE$(setting$) <> "[volume]"
         LINE INPUT #1, setting$
         IF MID$(setting$,1,1) <> "#" THEN
 
@@ -401,7 +401,7 @@ FUNCTION PBMAIN () AS LONG
 
     WEND
 
-    WHILE setting$ <> "[END]"
+    WHILE LCASE$(setting$) <> "[end]"
         LINE INPUT #1, setting$
         IF MID$(setting$,1,1) <> "#" THEN
 
@@ -423,8 +423,6 @@ FUNCTION PBMAIN () AS LONG
                     vol&(7) = VAL(param(setting$,1))
                 CASE "PSG2"
                     vol&(8) = VAL(param(setting$,1))
-                CASE "PSG3"
-                    vol&(9) = VAL(param(setting$,1))
                 CASE "PSG3"
                     vol&(9) = VAL(param(setting$,1))
                 CASE "PSGN"

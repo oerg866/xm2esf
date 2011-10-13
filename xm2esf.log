@@ -4,11 +4,11 @@ Copyright (c) 1998-2008 PowerBasic Inc.
 Venice, Florida USA
 All Rights Reserved
 
-Primary source:  C:\Users\Oerg866\Desktop\CONSOL~1\xm2esf\xm2esf.bas   {1205 total lines}
+Primary source:  C:\Users\Oerg866\Desktop\CONSOL~1\xm2esf\xm2esf.bas   {1203 total lines}
 Target compilation:  xm2esf.exe
-Compile time:  0.1 seconds, at 1446000 lines/minute
+Compile time:  0.1 seconds, at 1443600 lines/minute
 
-24876 bytes compiled code, 17425 bytes RTLibrary,
+24796 bytes compiled code, 17425 bytes RTLibrary,
 2980 bytes string literals, and 5144 bytes dgroup.
 Executable stack size:  1048576 bytes.
 Disk image: 50688 bytes   Memory image: 25549 bytes.
