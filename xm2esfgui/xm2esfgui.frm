@@ -5,8 +5,8 @@ Begin VB.Form Form1
    BorderStyle     =   1  'Fixed Single
    Caption         =   "XM2ESF/GUI v0.2 by Oerg866"
    ClientHeight    =   7980
-   ClientLeft      =   45
-   ClientTop       =   375
+   ClientLeft      =   150
+   ClientTop       =   780
    ClientWidth     =   9015
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
@@ -15,7 +15,7 @@ Begin VB.Form Form1
    ScaleWidth      =   9015
    StartUpPosition =   3  'Windows Default
    Begin VB.Frame Frame1 
-      Caption         =   "XM File (Please use specific paths unless you're REALLY SURE what you're doing...)"
+      Caption         =   "XM File (Please use absolute paths unless you're REALLY SURE what you're doing...)"
       Height          =   855
       Left            =   120
       TabIndex        =   102
@@ -563,6 +563,7 @@ Begin VB.Form Form1
          _Version        =   393216
          Enabled         =   0   'False
          Max             =   64
+         SelStart        =   64
          Value           =   64
       End
       Begin MSComctlLib.Slider Slider2 
@@ -592,7 +593,7 @@ Begin VB.Form Form1
          _ExtentY        =   556
          _Version        =   393216
          Max             =   64
-         SelStart        =   15
+         SelStart        =   64
          Value           =   64
       End
       Begin VB.Label Label20 
@@ -1277,6 +1278,7 @@ Begin VB.Form Form1
       _ExtentX        =   847
       _ExtentY        =   847
       _Version        =   393216
+      Filter          =   "64"
    End
    Begin VB.Label Label21 
       Alignment       =   2  'Center
@@ -1287,12 +1289,102 @@ Begin VB.Form Form1
       Top             =   7680
       Width           =   8775
    End
+   Begin VB.Menu fmenu 
+      Caption         =   "&File"
+      Begin VB.Menu openxif 
+         Caption         =   "&Open XIF"
+         Shortcut        =   ^O
+      End
+      Begin VB.Menu savexif 
+         Caption         =   "&Save XIF"
+         Shortcut        =   ^S
+      End
+      Begin VB.Menu exit 
+         Caption         =   "&Exit"
+         Shortcut        =   ^X
+      End
+   End
+   Begin VB.Menu hmenu 
+      Caption         =   "&Help"
+      Begin VB.Menu about 
+         Caption         =   "&About"
+      End
+   End
 End
 Attribute VB_Name = "Form1"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Dim saved As Boolean
+
+
+
+Function param(strn$, b&) As String
+    c& = 0
+    i& = 1
+    car$ = Mid$(strn$, 1, 1)
+    If car$ = Chr$(34) Then
+        comp$ = Chr$(34)
+        i& = 2
+        car$ = Mid$(strn$, 2, 1)
+    Else
+        comp$ = " "
+    End If
+    While c& <> b&
+    While car$ <> comp$
+          SPEFT$ = SPEFT$ + car$
+          i& = i& + 1
+          car$ = Mid$(strn$, i&, 1)
+          If i& > Len(strn$) Then
+              SPEFT$ = ""
+              param = SPEFT$
+              Exit Function
+          End If
+    Wend
+
+   i& = i& + 1
+   c& = c& + 1
+   ' SPEFT$ = MID$(strn$, i&, 1)
+    car$ = SPEFT$
+    Wend
+
+
+    param = RTrim$(SPLEFT(Mid$(strn$, i&)))
+
+End Function
+
+Function SPLEFT(strn$) As String
+
+    i& = 1
+    car$ = Mid$(strn$, 1, 1)
+    If car$ = Chr$(34) Then
+        comp$ = Chr$(34)
+        i& = 2
+        car$ = Mid$(strn$, 2, 1)
+    Else
+        comp$ = " "
+    End If
+    While car$ <> comp$
+          SPEFT$ = SPEFT$ + car$
+          i& = i& + 1
+          car$ = Mid$(strn$, i&, 1)
+          If i& > Len(strn$) Then
+              SPLEFT = SPEFT$ + cars$
+              Exit Function
+          End If
+    Wend
+              SPLEFT = SPEFT$
+End Function
+
+Private Sub about_Click()
+MsgBox "xm2esfgui / XIF creator v0.2" + vbNewLine + vbNewLine + "by Oerg866", , "About xm2esfgui..."
+End Sub
+
+Private Sub Check1_Click()
+saved = False
+
+End Sub
 
 Private Sub Command1_Click()
 If Text1.Text = "" Then
@@ -1302,6 +1394,7 @@ End If
 
 CommonDialog1.Filter = "XM Information File (*.xif) | *.xif|All Files (*.*)|*.*"
 
+CommonDialog1.Flags = cdlOFNOverwritePrompt Or cdlOFNHideReadOnly
 CommonDialog1.ShowSave
 
 a$ = CommonDialog1.FileName
@@ -1405,13 +1498,17 @@ End If
 
 Print #1, "[END]"
 Close
+saved = True
 
 End Sub
 
 Private Sub Command2_Click()
+saved = False
 CommonDialog1.Filter = "eXtended Module (*.xm) | *.xm|All Files (*.*)|*.*"
 CommonDialog1.InitDir = App.Path
 
+
+CommonDialog1.Flags = cdlOFNFileMustExist Or cdlOFNHideReadOnly
 
 CommonDialog1.ShowOpen
 a$ = CommonDialog1.FileName
@@ -1429,7 +1526,29 @@ Private Sub Option1_Click()
 
 End Sub
 
+Private Sub exit_Click()
+If saved = False Then
+a = MsgBox("Do you want to save this XIF?", vbYesNoCancel, "Unsaved content")
+If a = vbYes Then
+    Command1_Click
+ElseIf a = vbNo Then
+    saved = True
+    
+ElseIf a = vbCancel Then
+    Exit Sub
+End If
+End If
+If saved = False Then
+    MsgBox "Error saving file!"
+    Exit Sub
+End If
+
+Unload Me
+End Sub
+
 Private Sub fm_Change()
+
+saved = False
 If fm.Value = 6 And pcm.Value = 1 Then
 MsgBox "Errm.... You can't put PCM and FM6 at the same time.", , "Error"
 fm.Value = 5
@@ -1471,15 +1590,18 @@ End Sub
 
 Private Sub List1_Click()
 List2.Selected(List1.ItemData(List1.ListIndex)) = True
+saved = False
 End Sub
 
 Private Sub List2_Click()
+saved = False
 If List1.ListIndex > -1 Then
 List1.ItemData(List1.ListIndex) = List2.ListIndex
 End If
 End Sub
 
 Private Sub noise_Click()
+saved = False
 If noise.Value = 1 Then
     Frame10.Visible = True
     Frame9.Visible = True
@@ -1506,7 +1628,211 @@ End If
 
 End Sub
 
+Private Sub noisefreq_Click(Index As Integer)
+saved = False
+
+End Sub
+
+Private Sub noisetype_Click(Index As Integer)
+saved = False
+
+End Sub
+
+Private Sub openxif_Click()
+If saved = False Then
+a = MsgBox("Do you want to save this XIF?", vbYesNoCancel, "Unsaved content")
+If a = vbYes Then
+    Command1_Click
+ElseIf a = vbNo Then
+    saved = True
+    
+ElseIf a = vbCancel Then
+    Exit Sub
+End If
+End If
+If saved = False Then
+    Exit Sub 'Error during save
+End If
+CommonDialog1.Filter = "XM Information File (*.xif) | *.xif|All Files (*.*)|*.*"
+
+CommonDialog1.Flags = cdlOFNFileMustExist Or cdlOFNHideReadOnly
+
+CommonDialog1.ShowOpen
+
+m$ = CommonDialog1.FileName
+
+Open m$ For Input As #1
+
+    While LCase$(setting$) <> "[instruments]"
+        If Mid$(setting$, 1, 1) <> "#" Then
+           Select Case SPLEFT(setting$)
+
+              Case "FILE"
+                Text1.Text = param(setting$, 1)
+              Case "TYPE"
+                Select Case param(setting$, 1)
+                Case "BGM"
+                Option2(1).Value = True
+                Case "SFX"
+                Option2(1).Value = True
+                End Select
+                Select Case param(setting$, 2)
+                Case "LOOP"
+
+                Check1.Value = 1
+                Case "NOLOOP"
+                
+                Check1.Value = 0
+
+
+                End Select
+
+              Case "TEMPO"
+                  speed.Value = Val(param(setting$, 1))
+              Case "FM"
+                  fm.Value = Val(param(setting$, 1))
+                  
+              Case "PSG"
+                  psg.Value = Val(param(setting$, 1))
+                  
+              Case "PCM"
+                  pcm.Value = 1
+              Case "NOISE"
+                  noise.Value = Val(param(setting$, 1))
+              Case "FM1"
+                  xmchan(0).ListIndex = Val(param(setting$, 1)) - 1
+              Case "FM2"
+                  xmchan(1).ListIndex = Val(param(setting$, 1)) - 1
+              Case "FM3"
+                  xmchan(2).ListIndex = Val(param(setting$, 1)) - 1
+              Case "FM4"
+                  xmchan(3).ListIndex = Val(param(setting$, 1)) - 1
+              Case "FM5"
+                  xmchan(4).ListIndex = Val(param(setting$, 1)) - 1
+              Case "FM6"
+                  xmchan(5).ListIndex = Val(param(setting$, 1)) - 1
+              Case "PCMC"
+                  xmchan(10).ListIndex = Val(param(setting$, 1))
+              Case "PSG1"
+                  xmchan(6).ListIndex = Val(param(setting$, 1))
+              Case "PSG2"
+                  xmchan(7).ListIndex = Val(param(setting$, 1))
+              Case "PSG3"
+                  xmchan(8).ListIndex = Val(param(setting$, 1))
+              Case "PSGN"
+                  xmchan(9).ListIndex = Val(param(setting$, 1))
+              Case "NOISEFREQ" ' 1 = stock, 0 = psg3
+                  noisefreq(0).Value = Val(param(setting$, 1))
+                  noisefreq(1).Value = Not Val(param(setting$, 1))
+              Case "NOISETYPE"
+                  noisetype(0).Value = Val(param(setting$, 1))
+                  noisetype(1).Value = Not Val(param(setting$, 1))
+                  '1 = white noise, 0 = periodic noise
+           End Select
+        End If
+           Line Input #1, setting$
+
+    Wend
+
+    'INSTRUMENT ASSIGNMENTS
+            Line Input #1, setting$
+
+    While LCase$(setting$) <> "[pitch]"
+
+        If Mid$(setting$, 1, 1) <> "#" Then
+
+        List1.ItemData(Val(SPLEFT(setting$)) - 1) = Val("&H" + param(setting$, 1))
+        End If
+            Line Input #1, setting$
+        
+    Wend
+                               
+    
+    ' Internal channel to variable assignment help
+
+    ' 123456 = FM
+    ' 789    = PSG
+    ' 11     = PCM
+    ' 10     = NSE
+
+            Line Input #1, setting$
+                               
+
+    While LCase$(setting$) <> "[volume]"
+        If Mid$(setting$, 1, 1) <> "#" Then
+
+            Select Case SPLEFT(setting$)
+                Case "FM1"
+                    pitch(0) = Val(param(setting$, 1)) + 96
+                Case "FM2"
+                    pitch(1) = Val(param(setting$, 1)) + 96
+                Case "FM3"
+                    pitch(2) = Val(param(setting$, 1)) + 96
+                Case "FM4"
+                    pitch(3) = Val(param(setting$, 1)) + 96
+                Case "FM5"
+                    pitch(4) = Val(param(setting$, 1)) + 96
+                Case "FM6"
+                    pitch(5) = Val(param(setting$, 1)) + 96
+
+                Case "PSG1"
+                    pitch(6) = Val(param(setting$, 1)) + 96
+                Case "PSG2"
+                    pitch(7) = Val(param(setting$, 1)) + 96
+                Case "PSG3"
+                    pitch(8) = Val(param(setting$, 1)) + 96
+                Case "PSGN"
+                    pitch(9) = Val(param(setting$, 1)) + 96
+                End Select
+        End If
+        Line Input #1, setting$
+
+
+    Wend
+            Line Input #1, setting$
+
+
+
+    While LCase$(setting$) <> "[end]"
+        If Mid$(setting$, 1, 1) <> "#" Then
+
+            Select Case SPLEFT(setting$)
+                Case "FM1"
+                    Slider1(0).Value = Val(param(setting$, 1))
+                Case "FM2"
+                    Slider1(1).Value = Val(param(setting$, 1))
+                Case "FM3"
+                    Slider1(2).Value = Val(param(setting$, 1))
+                Case "FM4"
+                    Slider1(3).Value = Val(param(setting$, 1))
+                Case "FM5"
+                    Slider1(4).Value = Val(param(setting$, 1))
+                Case "FM6"
+                    Slider1(5).Value = Val(param(setting$, 1))
+
+                Case "PSG1"
+                    Slider2(0).Value = Val(param(setting$, 1))
+                Case "PSG2"
+                    Slider2(1).Value = Val(param(setting$, 1))
+                Case "PSG3"
+                    Slider2(2).Value = Val(param(setting$, 1))
+                Case "PSGN"
+                    Slider1(3).Value = Val(param(setting$, 1))
+                End Select
+        End If
+        Line Input #1, setting$
+
+
+    Wend
+    '
+    Close
+Close
+
+MsgBox "TEST"
+End Sub
+
 Private Sub Option2_Click(Index As Integer)
+saved = False
 If Index = 1 Then
     If Option2(Index).Value = True Then
         Check1.Value = 0
@@ -1526,6 +1852,7 @@ Private Sub VScroll1_Change()
 End Sub
 
 Private Sub pcm_Click()
+saved = False
 If pcm.Value = 1 And fm.Value = 6 Then
 MsgBox "Errm.... You can't put PCM and FM6 at the same time.", , "Error"
 pcm.Value = 0
@@ -1543,11 +1870,13 @@ End If
 End Sub
 
 Private Sub pitch_Change(Index As Integer)
+saved = False
 Label19(Index).Caption = pitch(Index).Value - 96
 
 End Sub
 
 Private Sub psg_Change()
+saved = False
 Label7.Caption = psg.Value
 For i = 1 To psg.Value
 Slider2(i - 1).Enabled = True
@@ -1573,19 +1902,27 @@ End If
 
 End Sub
 
+Private Sub savexif_Click()
+Command1_Click
+End Sub
+
 Private Sub Slider1_Change(Index As Integer)
+saved = False
 fmvol(Index).Caption = Slider1(Index).Value
 End Sub
 
 Private Sub Slider1_Scroll(Index As Integer)
+saved = False
 fmvol(Index).Caption = Slider1(Index).Value
 End Sub
 
 Private Sub Slider2_Change(Index As Integer)
+saved = False
 psgvol(Index).Caption = Slider2(Index).Value
 End Sub
 
 Private Sub Slider2_Scroll(Index As Integer)
+saved = False
 psgvol(Index).Caption = Slider2(Index).Value
 End Sub
 
@@ -1598,10 +1935,21 @@ Private Sub Slider3_Click()
 End Sub
 
 Private Sub speed_Change()
+saved = False
 Label15.Caption = speed.Value
 End Sub
 
 Private Sub speed_Scroll()
 
 Label15.Caption = speed.Value
+End Sub
+
+Private Sub Text1_Change()
+saved = False
+
+End Sub
+
+Private Sub xmchan_Change(Index As Integer)
+saved = False
+
 End Sub
