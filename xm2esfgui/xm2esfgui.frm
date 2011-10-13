@@ -1,17 +1,17 @@
 VERSION 5.00
-Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "Mscomctl.ocx"
-Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
+Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "mscomctl.ocx"
+Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form Form1 
    BorderStyle     =   1  'Fixed Single
-   Caption         =   "XM2ESF/GUI v0.129 by Oerg866"
-   ClientHeight    =   7950
+   Caption         =   "XM2ESF/GUI v0.2 by Oerg866"
+   ClientHeight    =   7980
    ClientLeft      =   45
    ClientTop       =   375
    ClientWidth     =   9015
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   7950
+   ScaleHeight     =   7980
    ScaleWidth      =   9015
    StartUpPosition =   3  'Windows Default
    Begin VB.Frame Frame1 
@@ -1272,8 +1272,8 @@ Begin VB.Form Form1
       Width           =   3015
    End
    Begin MSComDlg.CommonDialog CommonDialog1 
-      Left            =   240
-      Top             =   0
+      Left            =   8880
+      Top             =   4200
       _ExtentX        =   847
       _ExtentY        =   847
       _Version        =   393216
@@ -1300,7 +1300,8 @@ If Text1.Text = "" Then
     Exit Sub
 End If
 
-CommonDialog1.Filter = "XIF Files (*.xif)|*.xif"
+CommonDialog1.Filter = "XM Information File (*.xif) | *.xif|All Files (*.*)|*.*"
+
 CommonDialog1.ShowSave
 
 a$ = CommonDialog1.FileName
