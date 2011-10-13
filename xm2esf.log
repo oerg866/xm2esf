@@ -1,0 +1,20 @@
+PowerBASIC Console Compiler
+PB/CC   Version 5.00 
+Copyright (c) 1998-2008 PowerBasic Inc.
+Venice, Florida USA
+All Rights Reserved
+
+Primary source:  C:\Users\Oerg866\Desktop\CONSOL~1\xm2esf\xm2esf.bas   {1207 total lines}
+Target compilation:  xm2esf.exe
+Compile time:  0.1 seconds, at 1448400 lines/minute
+
+25100 bytes compiled code, 20275 bytes RTLibrary,
+2992 bytes string literals, and 5156 bytes dgroup.
+Executable stack size:  1048576 bytes.
+Disk image: 53760 bytes   Memory image: 28423 bytes.
+
+Component Files:
+----------------
+C:\Users\Oerg866\Desktop\CONSOL~1\xm2esf\xm2esf.bas
+
+

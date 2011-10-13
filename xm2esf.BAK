@@ -22,7 +22,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97"
+    version$ = "0.97.1"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -31,14 +31,13 @@ FUNCTION PBMAIN () AS LONG
 
     ' Developed according to official Echo docs. (C) 2011 Sik
 
-    ' Working hours logged: 247
-    '
+        '
     DIM pi AS DOUBLE
 
     pi= 3.14159265358979323846264338   ' The Pi is a lie :(
 
     PRINT "XM2ESF - Convert XM to Echo Stream Format"
-    PRINT "*** ALPHA VERSION "+version$
+    PRINT "*** BETA VERSION "+version$
     PRINT ""
     PRINT "Copyright (C) 2011 Oerg866"
     PRINT ""
@@ -106,18 +105,113 @@ FUNCTION PBMAIN () AS LONG
 
 
 
-        EXIT FUNCTION
+        END
         END IF
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' INITIALIZE ALL VARIABLES
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+'' XM to ESF channel assignment variables
+
+    DIM xmfm&(1 TO 6)       ' Contains the corresponding XM channel for each PSG channel
+    DIM xmpsg&(1 TO 3)      ' Contains the corresponding XM channel for each PSG channel
+
+    DIM fm&                 ' Amount of FM channels
+    DIM psg&                ' Amount of PSG channels
+    DIM present&(1 TO 11)   ' Used to define if a channel is present
+
+'' XM to ESF Instrument assignment variables
+
+    DIM esfins&(1 TO 256)   ' Contains the corresponding Echo Instrument ID (in Pointer List)
+                            ' for each XM instrument
+
+'' XM to ESF Song adjustment variables
+
+    DIM pitch&(1 TO 11)     ' Transpose value for each channel
+    DIM vol&(1 TO 11)       ' Channel volume for every channel
+
+'' XM to ESF Conversion loop and temporary variables:
+
+    DIM i AS INTEGER        ' For some loops
+
+'' XM to ESF stream data bridge variables
+    DIM curins&(1 TO 11)        ' Current XM instrument
+    DIM curnote&(1 TO 11)       ' Current note (XM note with transpose already applied !)
+    DIM curvol&(1 TO 11)        ' Current volume
+    DIM curfreq&(1 TO 9)        ' Current frequency (Used when writing new freq during portamento, vibrato and arpeggio)
+
+    DIM xmins&                  ' Instrument column in current XM row
+
+    DIM slidestep(1 TO 11) AS DOUBLE    ' Current step during a slide (effects 1,2 and 3) Unit: XM notes
+
+    DIM slidetarget&(1 TO 11)           ' Target for a slide (effects 1,2, and 3) Unit: XM Notes
+    DIM slidespeed&(1 TO 11)            ' Amount of XM notes to slide per tick
+
+    DIM volslidepos(1 TO 11) AS DOUBLE  ' Current position in volume slide (effect A), unit: XM volume
+    DIM volslidespeed(1 TO 11) AS DOUBLE' Amount of volume to slide per tick
+
+    DIM arpnote1&(1 TO 11)              ' Note 1 in arpeggio (effect 0)
+    DIM arpnote2&(1 TO 11)              ' Note 2 in arpeggio (effect 0)
+
+    DIM vibstep(1 TO 11) AS DOUBLE      ' Current step in a vibrato (note this is NOT in XM notes!
+                                        ' It's just the amouont of ticks that already have been
+                                        ' processed in a vibrato! it starts at 0, so that a smooth
+                                        ' sinewave can be applied, that starts at the current note!)
+
+    DIM vibspeed&(1 TO 11)              ' Vibrato speed (1st parameter in effect 4)
+    DIM vibdepth&(1 TO 11)              ' Vibrato depth (2nd parameter in effect 4)
+
+
+    DIM esfchan&(1 TO 11)               ' This is pretty interesting.
+                                        ' (and VERY important I might add)
+
+    esfchan&(1)  = 0                    ' The echo stream format definitions use direct YM2612/PSG
+    esfchan&(2)  = 1                    ' channel values. These are not 0-10 or something like that
+    esfchan&(3)  = 2                    ' but have gaps in them due to the way the chip is constructed.
+    esfchan&(4)  = 4                    ' This bridge variable takes care of this.
+    esfchan&(5)  = 5
+    esfchan&(6)  = 6
+    esfchan&(7)  = 8
+    esfchan&(8)  = 9
+    esfchan&(9)  = 10
+    esfchan&(10) = 12
+    esfchan&(11) = 11
+
+    DIM fmnote&(0 TO 11)                ' Pre-defined FM frequencies for every note (source: echo table)
+
+    fmnote&(0) = 644
+    fmnote&(1) = 681
+    fmnote&(2) = 722
+    fmnote&(3) = 765
+    fmnote&(4) = 810
+    fmnote&(5) = 858
+    fmnote&(6) = 910
+    fmnote&(7) = 964
+    fmnote&(8) = 1024
+    fmnote&(9) = 1081
+    fmnote&(10) = 1146
+    fmnote&(11) = 1214
+
+    DIM psgnote&(0 TO 11)
+
+    ' Please note: If the XM's Tempo is set to 150, every tick is exactly the same length as one echo tick
+    ' Meaning that the adjustable variable is the "Ticks per row". If XM's tempo is 150, you should set
+    ' the ticks per row value as the speed in the XIF input file. If you do that, your XM will be
+    ' exactly as fast as the echo output!!
+
+    ' most tempo values other than 150 will mean that the actual esf's speed will only be able to approximate
+    ' the actual XM speed.
+
+    tempo& = 7      ' Default is 7. A tempo of 150;7 is the same as the default many trackers use (125;6)
+
 
 
     OPEN COMMAND$(1) FOR INPUT AS #1
 
-    DIM xmfm&(1 TO 6)
-    DIM xmpsg&(1 TO 3)
-    DIM fm&
-    DIM psg&
-
-    tempo& = 7      ' Default tempo :P
+    ' This is the XIF file parser. It is long, andthe coding style is probably pretty bad. But! it works :P
+    ' The error handler is not very intelligent yet. But, it'll be, sooner or later. Probably later =P
 
     WHILE setting$ <> "[Instruments]"
         LINE INPUT #1, setting$
@@ -143,7 +237,7 @@ FUNCTION PBMAIN () AS LONG
                     PRINT "Press any key!"
                     WAITKEY$
                     CLOSE
-                    EXIT FUNCTION
+                    END
                 END IF
                 CASE "NOLOOP"
                 esfloop& = 0
@@ -158,7 +252,7 @@ FUNCTION PBMAIN () AS LONG
                   IF fm > 6 THEN
                       PRINT "Declared more than 6 FM channels. Press any key!"
 
-                  WAITKEY$:CLOSE:EXIT FUNCTION
+                  WAITKEY$:CLOSE:END
                   END IF
               CASE "PSG"
                   psg& = VAL(param(setting$, 1))
@@ -167,7 +261,7 @@ FUNCTION PBMAIN () AS LONG
                       PRINT "Press any key!"
                       WAITKEY$
                       CLOSE
-                      EXIT FUNCTION
+                      END
                   END IF
               CASE "PCM"
                   pcm& = 1
@@ -176,7 +270,7 @@ FUNCTION PBMAIN () AS LONG
                       PRINT "Press any key!"
                       WAITKEY$
                       CLOSE
-                      EXIT FUNCTION
+                      END
 
                   END IF
               CASE "NOISE"
@@ -214,13 +308,23 @@ FUNCTION PBMAIN () AS LONG
 
     WEND
 
+''''''''''''''''''''''''''''''''''''''''''''''''''''
+'' This calls a small program called LOADXM.
+'' It is a win32 self-contain port of nineko's
+'' original XM loader (QB/VB6). Ported and used
+'' with permission. Thanks, nineko!
+''''''''''''''''''''''''''''''''''''''''''''''''''''
     PRINT "loading XM file: " + xm$
     s$ = "loadxm " +  CHR$(34) + xm$ + CHR$(34)
     SHELL s$
+''  TODO: ERRORLEVEL checking. Because I was lazy and did not
+''        bother to check if loadxm actually was successful,
+''        xm2esf will still be let lose if loadxm failed.
+''        Oh well ^__^"
     PRINT "XM pattern data extracted"
+''''''''''''''''''''''''''''''''''''''''''''''''''''
 
     'INSTRUMENT ASSIGNMENTS
-    DIM esfins&(1 TO 256)
 
     WHILE setting$ <> "[Pitch]"
 
@@ -236,18 +340,17 @@ FUNCTION PBMAIN () AS LONG
 
     WEND
 
+
     PRINT "Loaded pitches"
-    'PITCH
+
+    ' Internal channel to variable assignment help
 
     ' 123456 = FM
     ' 789    = PSG
-
     ' 11     = PCM
     ' 10     = NSE
 
 
-
-    DIM pitch&(1 TO 11)
 
     WHILE setting$ <> "[Volume]"
         LINE INPUT #1, setting$
@@ -278,8 +381,6 @@ FUNCTION PBMAIN () AS LONG
 
 
     WEND
-
-    DIM vol&(1 TO 11)
 
     WHILE setting$ <> "[END]"
         LINE INPUT #1, setting$
@@ -319,9 +420,6 @@ FUNCTION PBMAIN () AS LONG
 
     OPEN COMMAND$(2) FOR BINARY AS #20
 
-
-    DIM i AS INTEGER
-    DIM present&(1 TO 11)
     FOR i = 1 TO fm&
 
     present&(i) = 1
@@ -351,61 +449,23 @@ FUNCTION PBMAIN () AS LONG
     END IF
     PRINT "Channels assigned and loaded"
 
-    '       $00nn ..... Note on FM channel #1              bollocks :(
-    '       $01nn ..... Note on FM channel #2
-    '       $02nn ..... Note on FM channel #3
-    '       $04nn ..... Note on FM channel #4
-    '       $05nn ..... Note on FM channel #5
-    '       $06nn ..... Note on FM channel #6
-    '       $08nn ..... Note on PSG channel #1
-    '       $09nn ..... Note on PSG channel #2
-    '       $0Ann ..... Note on PSG channel #3
-    '       $0Bnn ..... Note on PSG channel #4
-    '       $0Cnn ..... Note on PCM channel
-    '
-    '
 
-    DIM esfchan&(1 TO 11)
+'''''''''''''''''''''''''''''''''''''''''
+'' LOAD ALL PREDEFINED PSG FREQUENCIES ''
+'''''''''''''''''''''''''''''''''''''''''
 
-    esfchan&(1)  = 0
-    esfchan&(2)  = 1
-    esfchan&(3)  = 2
-    esfchan&(4)  = 4
-    esfchan&(5)  = 5
-    esfchan&(6)  = 6
-    esfchan&(7)  = 8
-    esfchan&(8)  = 9
-    esfchan&(9)  = 10
-    esfchan&(10) = 12
-    esfchan&(11) = 11
-
-    DIM fmnote&(1 TO 11)
-
-    fmnote&(0) = 644
-    fmnote&(1) = 681
-    fmnote&(2) = 722
-    fmnote&(3) = 765
-    fmnote&(4) = 810
-    fmnote&(5) = 858
-    fmnote&(6) = 910
-    fmnote&(7) = 964
-    fmnote&(8) = 1024
-    fmnote&(9) = 1081
-    fmnote&(10) = 1146
-    fmnote&(11) = 1214
-
-    DIM psgnote&(0 TO 384)
-    OPEN "psg.txt" FOR INPUT AS #1337
+    i = FREEFILE
+    OPEN "psg.txt" FOR INPUT AS #i
 
     t&=0
-    WHILE NOT EOF(1337)
+    WHILE NOT EOF(i)
 
-    LINE INPUT #1337, c$
+    LINE INPUT #i, c$
     psgnote&(t&) = VAL(c$)
 
     t&=t&+1
     WEND
-    CLOSE #1337
+    CLOSE #i
     PRINT "PSG Freq init."
 
     '            freq& = INT(fmnote&(subtone&) * (2^octave&))
@@ -417,11 +477,12 @@ FUNCTION PBMAIN () AS LONG
     ctype(10) = 2 'pcm
     ctype(11) = 3 'noise
 
-    OPEN "temp\file.inf" FOR INPUT AS #1234
-    LINE INPUT #1234, a$
-    LINE INPUT #1234, a$: restart& = VAL(a$)
-    LINE INPUT #1234, a$: total& = VAL(a$)
-    CLOSE #1234
+    i = FREEFILE
+    OPEN "temp\file.inf" FOR INPUT AS #i
+    LINE INPUT #i, a$
+    LINE INPUT #i, a$: restart& = VAL(a$)
+    LINE INPUT #i, a$: total& = VAL(a$)
+    CLOSE #i
 
     PRINT "File info read..."
 
@@ -444,28 +505,6 @@ FUNCTION PBMAIN () AS LONG
 
     NEXT i
 
-    DIM slidestep(1 TO 11) AS DOUBLE
-
-    DIM slidetarget&(1 TO 11)
-    DIM slidespeed&(1 TO 11)
-
-    DIM volslidepos(1 TO 11) AS DOUBLE
-    DIM volslidespeed(1 TO 11) AS DOUBLE
-
-    DIM arpnote1&(1 TO 11)
-    DIM arpnote2&(1 TO 11)
-
-    DIM vibstep(1 TO 11  )   AS DOUBLE
-    DIM vibspeed&(1 TO 11)
-    DIM vibdepth&(1 TO 11)
-
-    DIM curins&(1 TO 11)
-    DIM curnote&(1 TO 11)
-    DIM curvol&(1 TO 11)
-    DIM curfreq&(1 TO 9)
-    DIM xmins&
-
-    PRINT "Effect vals initialized"
 
     IF filetype& = 2 THEN
         FOR i =  1 TO 11

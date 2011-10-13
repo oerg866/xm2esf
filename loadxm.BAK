@@ -11,15 +11,6 @@ END TYPE
 
 FUNCTION PBMAIN () AS LONG
 
-'''''''''''''''''''''''''''''''''''''''''''''''''''
-' XM loader / splitter   v1.00a
-' Win32 self-contain port done by Oerg866
-' Original code (C) 1997, (Original implementation)
-'                   2006, (XM2SMPS)
-'                   2007, 2008 (XM3SMPS)
-'                   Nineko
-'''''''''''''''''''''''''''''''''''''''''''''''''''
-
 a$ = COMMAND$(1)
 IF a$ = "" THEN EXIT FUNCTION
 
