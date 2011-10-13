@@ -11,9 +11,6 @@ TYPE PATTERNDATA
 END TYPE
 
 FUNCTION PBMAIN () AS LONG
-    TRACE NEW "log.txt"
-
-
     '************************************
     '* XM2ESF/oerg                      *
     '************************************
@@ -22,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97.2"
+    version$ = "0.97.3"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -1067,7 +1064,6 @@ FUNCTION PBMAIN () AS LONG
     PRINT "Conversion done!"
 
     CLOSE
-    TRACE CLOSE
 
 END FUNCTION
 
