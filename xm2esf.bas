@@ -31,8 +31,7 @@ FUNCTION PBMAIN () AS LONG
 
     ' Developed according to official Echo docs. (C) 2011 Sik
 
-    ' Working hours logged: 247
-    '
+        '
     DIM pi AS DOUBLE
 
     pi= 3.14159265358979323846264338   ' The Pi is a lie :(
