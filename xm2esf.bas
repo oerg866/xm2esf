@@ -19,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97.4"
+    version$ = "0.97.8"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -224,13 +224,14 @@ FUNCTION PBMAIN () AS LONG
     tempo& = 7      ' Default is 7. A tempo of 150;7 is the same as the default many trackers use (125;6)
 
 
+    KILL COMMAND$(2)
 
     OPEN COMMAND$(1) FOR INPUT AS #1
 
     ' This is the XIF file parser. It is long, andthe coding style is probably pretty bad. But! it works :P
     ' The error handler is not very intelligent yet. But, it'll be, sooner or later. Probably later =P
 
-    WHILE LCASE$(setting$) <> "[Instruments]"
+    WHILE LCASE$(setting$) <> "[instruments]"
         LINE INPUT #1, setting$
         IF MID$(setting$, 1, 1) <> "#" THEN
            SELECT CASE spleft(setting$)
@@ -563,7 +564,7 @@ FUNCTION PBMAIN () AS LONG
 
                 IF xmeff& = 0 AND xmeffdat& = 0 THEN
 
-                    curvol&(i) = 64
+
                     effectdat&(i) = 255
                     effectval&(i) = 255
                 END IF
@@ -681,26 +682,13 @@ FUNCTION PBMAIN () AS LONG
                 IF xmnote& > 0 AND xmnote& < 97 THEN
 
                    IF ctype(i) = 0 OR ctype(i) = 1 THEN
-                            SELECT CASE effectdat&(i)
+                            SELECT CASE xmeff&
                                 CASE 1 TO 4
-                                    liquidtlo& = 24
+                                          liquidtlo& = 24
                                 CASE &hC
-                                CASE ELSE
+                                CASE 0, 5 TO &h9
 
-                                          'reset volume
-                                          PUT$ #20, CHR$(esfchan&(i) + &h20)                        ' it took me seven hours to find out this actually belong here
 
-                                          ' Hoyl shit guys. this is terrible.
-
-                                          IF ctype(i) = 0 THEN
-                                                 curvol&(i) = 64
-                                                 temp& = INT(fmvol(quotient(i) * 64))
-                                                 PUT$ #20, CHR$(temp&)
-                                          ELSE
-                                                 curvol&(i) = 64
-                                                 temp& = INT(psgvol(quotient(i) * 64))
-                                                 PUT$ #20, CHR$(temp&)
-                                          END IF
                             END SELECT
 
                             IF liquidtlo& <> 24 THEN
@@ -715,8 +703,41 @@ FUNCTION PBMAIN () AS LONG
                                 PUT$ #20, CHR$(&H40 + esfchan&(i))
                                 PUT$ #20, CHR$(INT(esfins&(curins&(i))))
 
+
+                                liquidtlo& = 0
+
                               END IF
+
+
                             END IF
+
+
+                            SELECT CASE xmeffdat&
+
+                            CASE 1 TO 4
+                                    curvol&(i) = curvol&(i)
+                            CASE &hA
+                                    curvol&(i) = curvol&(i)
+                            CASE &hC
+                                    curvol&(i) = curvol&(i)
+
+                            CASE ELSE
+                                          curvol&(i) = 64
+                                          PUT$ #20, CHR$(esfchan&(i) + &h20)
+
+                                          IF ctype(i) = 0 THEN
+                                                 temp& = INT(fmvol(quotient(i) * 64))
+                                                 PUT$ #20, CHR$(temp&)
+                                          ELSE
+                                                temp& = INT(psgvol(quotient(i) * 64))
+                                                PUT$ #20, CHR$(temp&)
+                                          END IF
+
+                                          'reset volume                                           ' it took me seven hours to find out this actually belong here
+
+                                          ' Hoyl shit guys. this is terrible.
+
+                            END SELECT
 
                             IF ctype(i) = 0 THEN
 
@@ -747,17 +768,6 @@ FUNCTION PBMAIN () AS LONG
                                     liquidtlo& = 24
                                 CASE ELSE
 
-                                    IF xmeff& <> &hC  THEN
-                                          'reset volume
-
-                                                 PUT$ #20, CHR$(&h2B)
-                                                 curvol&(i) = 64
-                                                 PUT$ #20, CHR$(psgvol(quotient(i) * 64))
-
-
-
-
-                                    END IF
                             END SELECT
 
                             IF liquidtlo& <>24 THEN
@@ -769,6 +779,20 @@ FUNCTION PBMAIN () AS LONG
                                 PUT$ #20, CHR$(esfins&(curins&(i)))
 
                             END IF
+
+                             SELECT CASE xmeffdat&
+
+                            CASE 0, 5 TO 9, 11 TO 16
+                                                                      curvol&(i) = 64
+                                          PUT$ #20, CHR$( &h2b)
+
+                                                 temp& = INT(psgvol(quotient(i) * 64))
+                                                 PUT$ #20, CHR$(temp&)
+                                          'reset volume                                           ' it took me seven hours to find out this actually belong here
+
+                                          ' Hoyl shit guys. this is terrible.
+                            END SELECT
+
                             tmp& = 0
                             IF noisetype& = 1 THEN
                                 tmp& = 3
@@ -794,9 +818,10 @@ FUNCTION PBMAIN () AS LONG
 
 
                             END IF
-                                liquidtlo& = 0
 
                     END IF
+
+
 
                 END IF
 
