@@ -19,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.97.8"
+    version$ = "0.98"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -552,30 +552,43 @@ FUNCTION PBMAIN () AS LONG
                 xmeff& =      ASC(MID$(row$(i), 4, 1))
                 xmeffdat& =   ASC(MID$(row$(i), 5, 1))
 
-' TEMP: Converting XM volume to FM volume (formula supplied by sik)
+' XM Effects handled by xm2esf:
+'
+'           0xx     Arpeggio
+'           1xx     Portamento up
+'           2xx     Portamento down
+'           3xx     Tone Portamento
+'           4xx     Vibrato
+'           8xx     Set Panning
+'           Axx     Volume Slide
+'           Cxx     Set volume
+'           Dxx     Pattern break (Always interpreted as D00!)
+'           F0x     Set speed
 
-'-(int(log10(x / 63.0) * 63))
 
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Speed
+                IF xmeff& = &hF THEN
+                    tempo& = xmeffdat&
+                END IF
+'''''''''''''''''''''''''''''''''''''''''''''''' Reset any slide attributes when no related effect is in use
                 IF xmeff& >4 OR xmeff& = 0 THEN
                     slidestep(i) = 0
                     slidespeed&(i) = 0
                     slidetarget&(i) = 0
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' Reset conversion values for effects when no effect is in use
                 IF xmeff& = 0 AND xmeffdat& = 0 THEN
-
-
                     effectdat&(i) = 255
                     effectval&(i) = 255
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Arpeggio
                 IF xmeff& = 0 AND xmeffdat& <> 0 THEN
                     effectdat&(i) = 0
                     effectval&(i) = xmeffdat&
                     arpnote1&(i) = INT(xmeffdat& / 16)
                     arpnote2&(i) = INT(xmeffdat& MOD 16)
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Panning
                 IF xmeff& = 8 THEN
                     'Set Panning
                     IF ctype(i) <> 0 AND ctype(i) <> 2 THEN
@@ -591,29 +604,26 @@ FUNCTION PBMAIN () AS LONG
                         END IF
                     END IF
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Vibrato
                 IF xmeff& = 4 THEN
 
                         IF effectdat&(i) = 4 THEN
                             vibspeed&(i) = INT(xmeffdat& / 16)
                             vibdepth&(i) = INT(xmeffdat& MOD 16)
-                        effectdat&(i) = 4
-                        effectval&(i) = xmeffdat&
-
+                            effectdat&(i) = 4
+                            effectval&(i) = xmeffdat&
                         ELSE
-                        effectdat&(i) = 4
-                        effectval&(i) = xmeffdat&
-
+                            effectdat&(i) = 4
+                            effectval&(i) = xmeffdat&
                             vibspeed&(i) = INT(xmeffdat& / 16)
                             vibdepth&(i) = INT(xmeffdat& MOD 16)
                             vibstep(i) = 0
                         END IF
                 END IF
-
-
-
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Tone Portamento
                 IF xmeff& = 3 THEN
+                        effectdat&(i) = 3
+                        effectval&(i) = xmeffdat&
                         IF effectdat&(i) > 4 OR effectdat&(i) = 1 THEN
                             slidestep(i) = curnote&(i)
                             IF effectdat&(i) = 3 THEN
@@ -623,16 +633,7 @@ FUNCTION PBMAIN () AS LONG
                                     slidespeed&(I) = xmeffdat&
                                 END IF
                             END IF
-
-                        ELSE
-
                         END IF
-
-                        effectdat&(i) = 3
-                        effectval&(i) = xmeffdat&
-
-
-
                     IF xmnote& > 0 AND xmnote& < 97 THEN
                       IF slidestep(i) <> 0 THEN
                        IF xmnote& + pitch&(i) < slidestep(i) THEN slidespeed&(i) = (-1)*xmeffdat& ELSE slidespeed&(i) = xmeffdat&
@@ -642,46 +643,41 @@ FUNCTION PBMAIN () AS LONG
                        slidestep(i) = curnote&(i)
                       END IF
                         slidetarget&(i) = xmnote& + pitch&(i)
-
-
                     END IF
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Portamento Up
                 IF xmeff& = 1 THEN
 
                         IF effectdat&(i) <> 1 THEN slidestep(i) = curnote&(i)
                         effectdat&(i) = 1
                         effectval&(i) = xmeffdat&
-
-
-                IF xmnote& < 97 AND xmnote& > 0 THEN  curnote&(i) = xmnote& +pitch&(i)
-
-                       slidespeed&(i) = xmeffdat&
-                       sliDetarget&(i) = 96
+                        IF xmnote& < 97 AND xmnote& > 0 THEN
+                            curnote&(i) = xmnote& +pitch&(i)
+                            slidestep(i) = curnote&(i)
+                        END IF
+                        slidespeed&(i) = xmeffdat&
+                        sliDetarget&(i) = 96
                 END IF
+'''''''''''''''''''''''''''''''''''''''''''''''' Set current note variable
                 IF xmnote& < 97 AND xmnote& > 0 THEN  curnote&(i) = xmnote& +pitch&(i)
 
-                IF xmeff& = 2 AND xmnote& > 0 AND xmnote& < 97  THEN
+                IF xmeff& = 2 THEN
                         effectdat&(i) = 2
                         effectval&(i) = xmeffdat&
-                       IF xmnote& < 97 AND xmnote& > 0 THEN  curnote&(i) = xmnote& +pitch&(i)
-                       slidestep(i) = curnote&(i)
-                       slidespeed&(i) = -xmeffdat&
-                       sliDetarget&(i) = 0
+                        IF xmnote& < 97 AND xmnote& > 0 THEN
+                            curnote&(i) = xmnote& +pitch&(i)
+                            slidestep(i) = curnote&(i)
+                        END IF
+                        slidespeed&(i) = -xmeffdat&
+                        slidetarget&(i) = 0
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' Handle a <Note Off>
                 IF xmnote& = 97 THEN
-
                     PUT$ #20, CHR$(esfchan&(i)+&h10)
-
                 END IF
-                IF xmnote& < 97 AND xmnote& > 0 THEN  curnote&(i) = xmnote& +pitch&(i)
-
-
-
+'''''''''''''''''''''''''''''''''''''''''''''''' Handle a new note
                 IF xmnote& > 0 AND xmnote& < 97 THEN
-
-                   IF ctype(i) = 0 OR ctype(i) = 1 THEN
+                    IF ctype(i) = 0 OR ctype(i) = 1 THEN
                             SELECT CASE xmeff&
                                 CASE 1 TO 4
                                           liquidtlo& = 24
@@ -757,7 +753,6 @@ FUNCTION PBMAIN () AS LONG
 
 
                     ELSEIF ctype(i) = 2 THEN
-                            PRINT "Pull everything apart, PCM's in da house"
                             curins&(i) = xmins&
                             PUT$ #20, CHR$(&hC)
                             PUT$ #20, CHR$(esfins&(curins&(i)))
@@ -823,9 +818,8 @@ FUNCTION PBMAIN () AS LONG
 
 
                 END IF
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Volume Slide
                 IF xmeff& = &HA THEN
-
                     IF ctype(i) <> 2 THEN
                           IF effectdat&(i) <> &hA THEN
                           effectdat&(i) = &hA
@@ -847,57 +841,38 @@ FUNCTION PBMAIN () AS LONG
                           END IF
                     END IF
                 END IF
-
-
-
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Volume
                 IF xmeff& = &HC THEN
                  IF ctype(i) = 0 THEN
                     effectdat&(i) = &HC
                     effectval&(i) = xmeffdat&
                     PUT$ #20, CHR$(esfchan&(i) + &H20)
-
                     temp& = INT(fmvol(xmeffdat& * quotient(i)))
                     PUT$ #20, CHR$(temp&)
-
-                  ELSEIF ctype(i)=1 THEN
-
+                 ELSEIF ctype(i)=1 THEN
                     effectdat&(i)= &HC
                     effectval&(i) = xmeffdat&
                     PUT$ #20, CHR$(esfchan&(i) + &H20)
                     PUT$ #20, CHR$(temp&)
 
-                  ELSEIF ctype(i) = 3 THEN
+                 ELSEIF ctype(i) = 3 THEN
                     effectdat&(i) = &HC
                     effectval&(i) = xmeffdat&
-
                     PUT$ #20, CHR$(&h2B)
                     temp& = INT(psgvol(xmeffdat& * quotient(i)))
                     PUT$ #20, CHR$(temp&)
-
-                  ELSE
-                      'ignore for pcm +noise
-                      effectdat&(i) = 255
-                      effectval&(i) = 255
-                  END IF
+                 ELSE
+                    'ignore for pcm +noise
+                    effectdat&(i) = 255
+                    effectval&(i) = 255
                  END IF
-
-
-
-
-
+                END IF
             END IF
         NEXT i
 
+'''''''''''''''''''''''''''''''''''''''''''''''' Process current effects inbetween rows
         FOR pf& = 1 TO tempo&
-        ' PROCESS EFFECTS
-
-        ' 0     Arpeggio
-        ' 1     Portamento up
-        ' 2     Portamento down
-        ' 3     Tone portamento
-        ' 4     Vibrato
-
-            FOR i = 1 TO 11
+           FOR i = 1 TO 11
 
                 SELECT CASE effectdat&(i)
 
