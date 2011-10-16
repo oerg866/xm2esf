@@ -19,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.98"
+    version$ = "0.98.1"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -677,46 +677,22 @@ FUNCTION PBMAIN () AS LONG
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' Handle a new note
                 IF xmnote& > 0 AND xmnote& < 97 THEN
-                    IF ctype(i) = 0 OR ctype(i) = 1 THEN
+                    IF ctype(i) = 0 OR ctype(i) = 1  OR ctype(i) = 3 THEN
                             SELECT CASE xmeff&
                                 CASE 1 TO 4
                                           liquidtlo& = 24
-                                CASE &hC
-                                CASE 0, 5 TO &h9
-
-
                             END SELECT
-
                             IF liquidtlo& <> 24 THEN
-
-
-                            'instrument being 0 means that we play the note as if the instrument is the same
-                            IF curins&(i) <> xmins&  THEN
-
-                              IF ctype(i) <> 2 THEN
-                                curins&(i) = xmins&
-
-                                PUT$ #20, CHR$(&H40 + esfchan&(i))
-                                PUT$ #20, CHR$(INT(esfins&(curins&(i))))
-
-
-                                liquidtlo& = 0
-
-                              END IF
-
-
+                                IF curins&(i) <> xmins& AND xmins& <> 0 THEN
+                                    curins&(i) = xmins&
+                                    PUT$ #20, CHR$(&H40 + esfchan&(i))
+                                    PUT$ #20, CHR$(INT(esfins&(curins&(i))))
+                                    liquidtlo& = 0
+                                END IF
                             END IF
-
-
                             SELECT CASE xmeffdat&
-
-                            CASE 1 TO 4
+                            CASE 1 TO 4, &hA, &hC
                                     curvol&(i) = curvol&(i)
-                            CASE &hA
-                                    curvol&(i) = curvol&(i)
-                            CASE &hC
-                                    curvol&(i) = curvol&(i)
-
                             CASE ELSE
                                           curvol&(i) = 64
                                           PUT$ #20, CHR$(esfchan&(i) + &h20)
@@ -728,95 +704,43 @@ FUNCTION PBMAIN () AS LONG
                                                 temp& = INT(psgvol(quotient(i) * 64))
                                                 PUT$ #20, CHR$(temp&)
                                           END IF
-
-                                          'reset volume                                           ' it took me seven hours to find out this actually belong here
-
-                                          ' Hoyl shit guys. this is terrible.
-
                             END SELECT
-
                             IF ctype(i) = 0 THEN
-
                                 PUT$ #20, CHR$(esfchan&(i))
                                 PUT$ #20, CHR$(INT(32 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12)) + 1))
-
                             ELSEIF ctype(i) = 1 THEN
-
                                 PUT$ #20, CHR$(esfchan&(i))
                                 PUT$ #20, CHR$(INT(24 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12))))
+                            ELSE
+                                tmp& = 0
+                                IF noisetype& = 1 THEN
+                                    tmp& = 3
+                                    PUT$ #20, CHR$(&hB)
+                                    IF noisemode& = 0 THEN
+                                        PUT$ #20, CHR$(&h0)
+                                    ELSE
+                                        PUT$ #20, CHR$(&h4)
+                                    END IF
+                                ELSE
+                                    tmp& = 3
+                                    curfreq&(i) = INT((0.5^((curnote&(i))/12-1))/2*851)
+                                    PUT$ #20, CHR$(&h3A)
+                                    PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
+                                    PUT$ #20, CHR$(&hB)
+                                    IF noisemode& = 1 THEN
+                                        PUT$ #20, CHR$(&h3)
+                                    ELSE
+                                        PUT$ #20, CHR$(&h7)
+                                    END IF
 
+                                END IF
                             END IF
-
-                            END IF
-                                liquidtlo& = 0
-
-
-
+                            liquidtlo& = 0
                     ELSEIF ctype(i) = 2 THEN
                             curins&(i) = xmins&
                             PUT$ #20, CHR$(&hC)
                             PUT$ #20, CHR$(esfins&(curins&(i)))
-                    ELSEIF ctype(i) = 3 THEN
-                        SELECT CASE xmeff&
-                                CASE 1 TO 4
-                                    liquidtlo& = 24
-                                CASE ELSE
-
-                            END SELECT
-
-                            IF liquidtlo& <>24 THEN
-
-                            IF curins&(i) <> xmins& THEN
-                              Curins&(i) = xmins&
-
-                                PUT$ #20, CHR$(&H40 + esfchan&(i))
-                                PUT$ #20, CHR$(esfins&(curins&(i)))
-
-                            END IF
-
-                             SELECT CASE xmeffdat&
-
-                            CASE 0, 5 TO 9, 11 TO 16
-                                                                      curvol&(i) = 64
-                                          PUT$ #20, CHR$( &h2b)
-
-                                                 temp& = INT(psgvol(quotient(i) * 64))
-                                                 PUT$ #20, CHR$(temp&)
-                                          'reset volume                                           ' it took me seven hours to find out this actually belong here
-
-                                          ' Hoyl shit guys. this is terrible.
-                            END SELECT
-
-                            tmp& = 0
-                            IF noisetype& = 1 THEN
-                                tmp& = 3
-                                PUT$ #20, CHR$(&hB)
-                                IF noisemode& = 0 THEN
-                                    PUT$ #20, CHR$(&h0)
-                                ELSE
-                                    PUT$ #20, CHR$(&h4)
-                                END IF
-                            ELSE
-                                tmp& = 3
-                                curfreq&(i) = INT((0.5^((curnote&(i))/12-1))/2*851)
-                                PUT$ #20, CHR$(&h3A)
-                                PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-                                PUT$ #20, CHR$(&hB)
-                                IF noisemode& = 1 THEN
-                                    PUT$ #20, CHR$(&h3)
-                                ELSE
-                                    PUT$ #20, CHR$(&h7)
-                                END IF
-
-                            END IF
-
-
-                            END IF
-
                     END IF
-
-
-
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Volume Slide
                 IF xmeff& = &HA THEN
