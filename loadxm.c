@@ -63,9 +63,8 @@ int main(int argc, char* argv[])
 
     total_length = 0;
     printf("loadxm/c by oerg866\n");
-    printf("v0.01\n\n");
+    printf("v1.00\n\n");
 
-    //printf(argv[0]);
     FILE *xm = fopen(argv[1], "rb");
     FILE *inf = fopen("temp/file.inf", "w");
 
@@ -226,7 +225,7 @@ int main(int argc, char* argv[])
         sprintf(tempfnm, "temp/C%d.tmp", i);
         FILE *xmout = fopen(tempfnm, "wb");
         for (x = 0; x < songlength; x++){
-            sprintf(tempfnm, "temp/P%dC%d.tmp", x, i);
+            sprintf(tempfnm, "temp/P%dC%d.tmp", tpattern[x], i);
             FILE *xmin = fopen(tempfnm, "rb");
             fread(buffer, 1, lpattern[tpattern[x]] * 5, xmin);
             fwrite(buffer , 1 , lpattern[tpattern[x]] * 5, xmout);
