@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -11,11 +12,78 @@
 
 using namespace std;
 
+#define pi = 3.14159265358979323846264338;
+
+string lcase(string ppp) {
+    for (uint32_t i = 0; i <= sizeof(ppp); i++) {
+        ppp[i] = tolower(ppp[i]);
+    }
+    return (ppp);
+}
+
+string spleft(string strn) {
+    uint16_t i = 0;
+    string car;
+    string comp;
+    string speft;
+    car = strn[0];
+    if car[0] = "\"" {
+        comp = "\"";
+        i = 1;
+        car = strn[1];
+    }
+    else {comp = " ";}
+
+    while (car != comp) {
+        speft = speft + car;
+        i++;
+        car = strn[i];
+        if ((i+1) > sizeof(strn)) {
+        return (speft + car);
+        }
+    }
+    return (speft);
+}
+
+string param(string strn, uint16_t b) {
+    uint16_t c = 0;
+    uint16_t i = 0;
+    uint16_t b = 0;
+    string comp;
+    string speft;
+    string car;
+    car = strn[0];
+    if car[0] = "\"" {
+        comp = "\"";
+        i = 1;
+        car = strn[1];
+    }
+    else {comp = " ";}
+
+    while (c != b) {
+        while (car != comp) {
+            speft = speft + car;
+            i++
+            car = strn[i];
+            if ((i+1) > sizeof(strn)) {
+                speft = ""
+                return (speft);
+            }
+        }
+        i++;
+        c++;
+        car = speft;
+    }
+
+    return
+
+}
+
 int main(int argc, char *argv[])
 {
     string version = "0.99.0/c-wip";
 
-    double pi = 3.14159265358979323846264338;
+
 
     cout << "XM2ESF - Convert XM to Echo Stream Format\n";
     cout << "*** BETA VERSION " << version << "\n";
@@ -135,17 +203,25 @@ int main(int argc, char *argv[])
     fmnote[8] = 1024;
     fmnote[9] = 1081;
     fmnote[10] = 1146;
-    fmnote[11] = 644;
+    fmnote[11] = 1214;
 
     uint16_t psgnote[12];
 
     uint8_t ctype[12];
 
-    unlink(argv[2]);
+    ifstream config;
+    config.open (argv[2], ios::in);
 
-    FILE *config = fopen(argv[1], "r");
+    string setting;
 
-    //
+    while (lcase(setting) != "[instruments]") {
+        getline(config, setting)
+        if (setting[0] != "#") {
+            switch spleft(setting)
+
+        }
+    }
+
 
     return 0;
 }
