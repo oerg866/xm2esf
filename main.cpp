@@ -9,64 +9,92 @@
 #include <dirent.h>
 #include <stdlib.h>
 
+/**
+    XM 2 ESF   by Oerg866   C++ Port
+                                    **/
+
 
 using namespace std;
 
 #define pi = 3.14159265358979323846264338;
+#define version = "0.99a C++ Port WIP";
 
-string lcase(string ppp) {
-    for (uint32_t i = 0; i <= sizeof(ppp); i++) {
-        ppp[i] = tolower(ppp[i]);
-    }
-    return (ppp);
+string trim(string p, const char* t = " tnrfv")
+{
+    string s;
+    s = p;
+    s.erase(0, s.find_first_not_of(t));
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
 }
 
-string spleft(string strn) {
+//string lcase(string ppp) {
+//    for (uint32_t i = 0; i < ppp.size; i++) {
+//        ppp.substr(i,1) = tolower(ppp.substr(i,1));
+//    }
+//    return (ppp);
+//}
+
+string spleft(string strn)
+{
     uint16_t i = 0;
     string car;
     string comp;
     string speft;
     car = strn[0];
-    if car[0] = "\"" {
+    if (car[0] == 0x34)
+    {
         comp = "\"";
         i = 1;
         car = strn[1];
     }
-    else {comp = " ";}
+    else
+    {
+        comp = " ";
+    }
 
-    while (car != comp) {
+    while (car != comp)
+    {
         speft = speft + car;
         i++;
-        car = strn[i];
-        if ((i+1) > sizeof(strn)) {
-        return (speft + car);
+        car = strn.substr(i, 1);
+        if ((i+1) > strn.size))
+        {
+            return (speft + car);
         }
     }
     return (speft);
 }
 
-string param(string strn, uint16_t b) {
+string param(string strn, uint16_t b)
+{
     uint16_t c = 0;
     uint16_t i = 0;
-    uint16_t b = 0;
     string comp;
     string speft;
     string car;
     car = strn[0];
-    if car[0] = "\"" {
+    if (car[0] = 0x34)
+    {
         comp = "\"";
         i = 1;
         car = strn[1];
     }
-    else {comp = " ";}
+    else
+    {
+        comp = " ";
+    }
 
-    while (c != b) {
-        while (car != comp) {
+    while (c != b)
+    {
+        while (car != comp)
+        {
             speft = speft + car;
-            i++
+            i++;
             car = strn[i];
-            if ((i+1) > sizeof(strn)) {
-                speft = ""
+            if ((i+1) > sizeof(strn))
+            {
+                speft = "";
                 return (speft);
             }
         }
@@ -74,16 +102,11 @@ string param(string strn, uint16_t b) {
         c++;
         car = speft;
     }
-
-    return
-
+    return trim(spleft(speft.substr(i)));
 }
 
 int main(int argc, char *argv[])
 {
-    string version = "0.99.0/c-wip";
-
-
 
     cout << "XM2ESF - Convert XM to Echo Stream Format\n";
     cout << "*** BETA VERSION " << version << "\n";
@@ -107,7 +130,8 @@ int main(int argc, char *argv[])
     cout << "program :)\n";
     cout << "\n";
 
-    if (argc == < 3) {
+    if (argc == < 3)
+    {
         cout << "usage: xm2esf <infile> <outfile>\n";
         cout << "\n";
         cout << "<infile>  is the pointer to an XIF file. An XIF file is a descriptor\n";
@@ -128,60 +152,81 @@ int main(int argc, char *argv[])
         cout << "          conversion somehow fails (well.. it shouldn't :P but just\n";
         cout << "          keep in mind to back up often while xm2esf is in alpha stage\n";
         cout << "\n";
-    return 2;
+        return 2;
     }
 
-    uint8_t xmfm[7];
-    uint8_t xmpsg[4];
 
-    uint8_t fm;
-    uint8_t psg;
-    uint8_t present[12];
+    /** ///////////////////////////
+    // Initialize variables      //
+    /////////////////////////// **/
 
-    uint8_t esfins[257];
+    // XM to ESF Channel assignment variables
 
-    uint8_t pitch[12];
-    uint8_t vol[12];
-    double quotient[12];
+    uint8_t xmfm[7];        // Contains the corresponding XM channel for each FM Channel
+    uint8_t xmpsg[4];       // Contains the corresponding XM channel for each PSG channel
 
-    uint32_t i;
-    uint32_t currow;
+    uint8_t fm;             // Amount of FM channels
+    uint8_t psg;            // Amount of PSG channels
+    uint8_t present[12];    // Used to define if a channel is present
 
-    string row[12] = "     ";
-    uint8_t curins[12];
-    uint8_t curnote[12];
-    uint8_t curvol[12];
-    uint32_t curfreq[12];
+    // XM to ESF Instrument assignment variables
 
-    uint8_t effectdat[12];
-    uint8_t effectval[12];
+    uint8_t esfins[257];    /* Contains the corresponding Echo instrument ID (in Pointer List)
+                            // for each XM instrument */
 
-    uint8_t xmins;
+    // XM to ESF Song adjustment variables
 
-    double slidestep[12];
+    uint8_t pitch[12];      // Transpose value for each channel
+    uint8_t vol[12];        // Channel volume
+    double quotient[12];    // Volume conversion quotient (to limit volume to a certain value)
 
-    uint8_t slidetarget[12];
-    uint8_t slidespeed[12];
+    // XM to ESF Conversion loop and temporary variables
 
-    double volslidepos[12];
-    double volslidespeed[12];
+    uint32_t i;             // For some loops
+    uint32_t currow;        // Current row of entire song that's being processed
 
-    uint8_t arpnote1[12];
-    uint8_t arpnote2[12];
+    // XM to ESF Stream data bridge variables
 
-    double vibstep[12];
+    string row[12] = "     ";   // Current XM row for each channel
+    uint8_t curins[12];     // Current XM instrument
+    uint8_t curnote[12];    // Current note (XM note with transpose already applied !)
+    uint8_t curvol[12];     // Current volume
+    uint32_t curfreq[12];   // Current frequency (Used for note slide effects, like 1xx, 2xx, 3xx, 4xx
 
-    uint8_t vibspeed[12];
-    uint8_t vibdepth[12];
+    uint8_t effectdat[12];  // Current effect ID
+    uint8_t effectval[12];  // Current effect data
 
-    double conversion;
+    uint8_t xmins;          // Instrument column in current XM row
 
-    uint8_t esfchan[12];
+    double slidestep[12];   // Current step during a slide. unit: XM notes
 
-    esfchan[1] = 0;
-    esfchan[2] = 1;
-    esfchan[3] = 2;
-    esfchan[4] = 4;
+    uint8_t slidetarget[12];// Target for a slide. Unit: XM notes
+    uint8_t slidespeed[12]; // Amount of XM notes to slide per tick. Ain't super accurate, but it'll do the job
+
+    double volslidepos[12]; // Current position in volume slide (Effect 0x0A), unit: XM volume...erm.. whatever
+    double volslidespeed[12];   // Amount of volume to slide per tick. AFAIK, this is 100% accurate to XM
+
+    uint8_t arpnote1[12];   // Note 1 in arpeggio
+    uint8_t arpnote2[12];   // Note 2 in arpeggio
+
+    double vibstep[12];     /* Current step in a vibrato (note this is NOT in XM notes!
+                               It's just the amouont of ticks that already have been
+                               processed in a vibrato! it starts at 0, so that a smooth
+                               sinewave can be applied, that starts at the current note!) */
+
+    uint8_t vibspeed[12];   // Vibrato speed (1st parameter in effect 0x04)
+    uint8_t vibdepth[12];   // Vibrato depth (2nd parameter in effect 0x04)
+
+    double conversion;      // Note to frequency conversion variable
+
+    // XM to ESF conversion init variables
+
+    uint8_t esfchan[12];    // Very interesting and important
+
+    esfchan[1] = 0;         // The echo stream format definitions use direct YM2612/PSG
+    esfchan[2] = 1;         // channel values. These are not 0-10 or something like that
+    esfchan[3] = 2;         // but have gaps in them due to the way the chip is constructed.
+    esfchan[4] = 4;         // This bridge variable takes care of this.
     esfchan[5] = 5;
     esfchan[6] = 6;
     esfchan[7] = 8;
@@ -190,7 +235,7 @@ int main(int argc, char *argv[])
     esfchan[10] = 12;
     esfchan[11] = 11;
 
-    uint16_t fmnote[12];
+    uint16_t fmnote[12];    // Pre-defined fm frequencies for every note (source: echo table)
 
     fmnote[0] = 644;
     fmnote[1] = 681;
@@ -205,19 +250,77 @@ int main(int argc, char *argv[])
     fmnote[10] = 1146;
     fmnote[11] = 1214;
 
-    uint16_t psgnote[12];
+    uint16_t psgnote[12];   // Pre-defined PSG frequencies for every note (source: echo table)
 
-    uint8_t ctype[12];
+    uint8_t ctype[12];      // Channel type (defines internally which channels from 1 to 11 are FM, PSG, PCM and Noise
 
-    ifstream config;
+/////////////////////////////////////////////////////////
+// INIT CODE BEGINS HERE :)
+/*
+    ' Please note: If the XM's Tempo is set to 150, every tick is exactly the same length as one echo tick
+    ' Meaning that the adjustable variable is the "Ticks per row". If XM's tempo is 150, you should set
+    ' the ticks per row value as the speed in the XIF input file. If you do that, your XM will be
+    ' exactly as fast as the echo output!!
+
+    ' most tempo values other than 150 will mean that the actual esf's speed will only be able to approximate
+    ' the actual XM speed.
+*/
+
+//  ' This is the XIF file parser. It is long, andthe coding style is probably pretty bad. But! it works :P
+//  ' The error handler is not very intelligent yet. But, it'll be, sooner or later. Probably later =P
+
+    ifstream config;        // Configuration input file
     config.open (argv[2], ios::in);
 
     string setting;
+    string xm;
 
-    while (lcase(setting) != "[instruments]") {
-        getline(config, setting)
-        if (setting[0] != "#") {
-            switch spleft(setting)
+    uint8_t filetype = 1;
+    uint8_t esfloop = 1;
+
+    uint8_t tempo = 7;
+
+    while (lcase(setting) != "[instruments]")
+    {
+        getline(config, setting);
+        if (setting.substr(0,1) != "#")
+        {
+            switch (spleft(setting))
+            {
+            case "FILE":
+                xm = param(setting, 1);
+                cout << "XM File: " << xm;
+                break;
+            case "TYPE":
+                switch (param(setting, 1))
+                {
+                case "BGM":
+                    filetype = 1;
+                    break;
+                case "SFX"
+                        filetype = 2;
+                    break;
+                }
+                switch (param(setting, 2))
+                {
+                case "LOOP":
+                    esfloop = 1;
+                    if (filetype == 2)
+                    {
+                        cout << "Input file errorneously declares loop while being a SFX. File rejected!";
+                        config close;
+                        return 1;
+                    }
+                    break;
+                case "NOLOOP":
+                    esfloop = 0;
+                    break;
+                }
+                break;
+            case "TEMPO":
+                tempo
+            }
+
 
         }
     }
