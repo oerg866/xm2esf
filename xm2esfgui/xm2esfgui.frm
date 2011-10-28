@@ -4,14 +4,14 @@ Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form Form1 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "XM2ESF/GUI v0.2 by Oerg866"
-   ClientHeight    =   7980
+   ClientHeight    =   8055
    ClientLeft      =   150
    ClientTop       =   780
    ClientWidth     =   9015
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   7980
+   ScaleHeight     =   8055
    ScaleWidth      =   9015
    StartUpPosition =   3  'Windows Default
    Begin VB.Frame Frame1 
@@ -102,7 +102,7 @@ Begin VB.Form Form1
    End
    Begin VB.Frame Frame7 
       Caption         =   "Pitch control"
-      Height          =   1455
+      Height          =   1575
       Left            =   2880
       TabIndex        =   22
       Top             =   6120
@@ -433,8 +433,8 @@ Begin VB.Form Form1
       End
    End
    Begin VB.Frame Frame6 
-      Caption         =   "M"
-      Height          =   3735
+      Caption         =   "Channel volume"
+      Height          =   3855
       Left            =   120
       TabIndex        =   21
       Top             =   3840
@@ -1266,7 +1266,7 @@ Begin VB.Form Form1
    End
    Begin VB.CommandButton Command1 
       Caption         =   "Create XIF File"
-      Height          =   735
+      Height          =   855
       Left            =   5880
       TabIndex        =   0
       Top             =   6840
@@ -1286,7 +1286,7 @@ Begin VB.Form Form1
       Height          =   255
       Left            =   120
       TabIndex        =   108
-      Top             =   7680
+      Top             =   7800
       Width           =   8775
    End
    Begin VB.Menu fmenu 
@@ -1672,7 +1672,7 @@ Open m$ For Input As #1
               Case "TYPE"
                 Select Case param(setting$, 1)
                 Case "BGM"
-                Option2(1).Value = True
+                Option2(0).Value = True
                 Case "SFX"
                 Option2(1).Value = True
                 End Select
@@ -1712,15 +1712,15 @@ Open m$ For Input As #1
               Case "FM6"
                   xmchan(5).ListIndex = Val(param(setting$, 1)) - 1
               Case "PCMC"
-                  xmchan(10).ListIndex = Val(param(setting$, 1))
+                  xmchan(10).ListIndex = Val(param(setting$, 1)) - 1
               Case "PSG1"
-                  xmchan(6).ListIndex = Val(param(setting$, 1))
+                  xmchan(6).ListIndex = Val(param(setting$, 1)) - 1
               Case "PSG2"
-                  xmchan(7).ListIndex = Val(param(setting$, 1))
+                  xmchan(7).ListIndex = Val(param(setting$, 1)) - 1
               Case "PSG3"
-                  xmchan(8).ListIndex = Val(param(setting$, 1))
+                  xmchan(8).ListIndex = Val(param(setting$, 1)) - 1
               Case "PSGN"
-                  xmchan(9).ListIndex = Val(param(setting$, 1))
+                  xmchan(9).ListIndex = Val(param(setting$, 1)) - 1
               Case "NOISEFREQ" ' 1 = stock, 0 = psg3
                   noisefreq(0).Value = Val(param(setting$, 1))
                   noisefreq(1).Value = Not Val(param(setting$, 1))
@@ -1817,7 +1817,7 @@ Open m$ For Input As #1
                 Case "PSG3"
                     Slider2(2).Value = Val(param(setting$, 1))
                 Case "PSGN"
-                    Slider1(3).Value = Val(param(setting$, 1))
+                    Slider2(3).Value = Val(param(setting$, 1))
                 End Select
         End If
         Line Input #1, setting$
@@ -1828,7 +1828,6 @@ Open m$ For Input As #1
     Close
 Close
 
-MsgBox "TEST"
 End Sub
 
 Private Sub Option2_Click(Index As Integer)

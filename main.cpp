@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 
     uint8_t tempo = 7;
 
-    while (lcase(setting) != "[instruments]")
+    while (strlwr(setting)) != "[instruments]")
     {
         getline(config, setting);
         if (setting.substr(0,1) != "#")
@@ -318,12 +318,203 @@ int main(int argc, char *argv[])
                 }
                 break;
             case "TEMPO":
-                tempo
+                tempo = strtoul(param(setting, 1));
+                break;
+            case "FM":
+                fm = strtoul(param(setting, 1));
+                if (fm > 6) {
+                    cout << "ERROR: Declared more than 6 FM channels.";
+                    config close;
+                    return 1
+                }
+                break;
+            case "PSG":
+                psg = strtoul(param(setting, 1));
+                if (psg > 3) {
+                    cout << "ERROR: Declared more than 3 PSG channels.":
+                    config close;
+                    return 1
+                }
+                break;
+            case "PCM":
+                pcm = 1;
+                if (fm = 6) {
+                    cout << "ERROR: Cannot have 6 FM channels and PCM too."
+                    config close;
+                    return 1
+                }
+                break:
+            case "NOISE"
+                noise = 1;
+                break;
+
+            case "FM1":
+                xmfm[1] = strtoul(param(setting, 1));
+                break;
+            case "FM2":
+                xmfm[2] = strtoul(param(setting, 1));
+                break;
+            case "FM3":
+                xmfm[3] = strtoul(param(setting, 1));
+                break;
+            case "FM4":
+                xmfm[4] = strtoul(param(setting, 1));
+                break;
+            case "FM5":
+                xmfm[5] = strtoul(param(setting, 1));
+                break;
+            case "FM6":
+                xmfm[6] = strtoul(param(setting, 1));
+                break;
+            case "PCMC":
+                xmpcm = strtoul(param(setting,1));
+                break;
+            case "PSG1":
+                xmpsg[1] = strtoul(param(setting, 1));
+                break;
+            case "PSG2":
+                xmpsg[2] = strtoul(param(setting, 1));
+                break;
+            case "PSG3":
+                xmpsg[3] = strtoul(param(setting, 1));
+                break;
+            case "PSGN":
+                xmnoise& = strtoul(param(setting, 1));
+                break;
+            case "NOISEFREQ":
+                noisetype& = strtoul(param(setting, 1));
+                break;
+            case "NOISETYPE":
+                noisemode& = strtoul(param(setting, 1));
+                break;
+            }
+        }
+    }
+
+    cout << "Loading XM file: " << xm;
+
+    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+        system("loadxm \"" + xm + "\"");
+    #elif defined (__UNIX__)
+        xm.replace(s.begin(), s.end(), ' ', '\ ');
+        system("loadxm " + xm);
+    #endif
+
+    while (strlwr(setting) != "[volume]" {
+            getline(config,setting);
+            if (setting.substr(0,1) != "#") {
+                switch (spleft(setting)) {
+                    case "FM1":
+                        pitch[1] = strtoul(param(setting, 1));
+                        break;
+                    case "FM2":
+                        pitch[2] = strtoul(param(setting, 1));
+                        break;
+                    case "FM3":
+                        pitch[3] = strtoul(param(setting, 1));
+                        break;
+                    case "FM4":
+                        pitch[4] = strtoul(param(setting, 1));
+                        break;
+                    case "FM5":
+                        pitch[5] = strtoul(param(setting, 1));
+                        break;
+                    case "FM6":
+                        pitch[6] = strtoul(param(setting, 1));
+                        break;
+
+                    case "PSG1":
+                        pitch[7] = strtoul(param(setting, 1));
+                        break;
+                    case "PSG2":
+                        pitch[8] = strtoul(param(setting, 1));
+                        break;
+                    case "PSG3":
+                        pitch[9] = strtoul(param(setting, 1));
+                        break;
+                    case "PSGN":
+                        pitch[11] = strtoul(param(setting, 1));
+                        break;
+
+                }
             }
 
 
-        }
     }
+
+    while (strlwr(setting) != "[end]") {
+        getline(config, setting);
+        if (setting.substr(0,1) != "#") {
+            switch (spleft(setting)) {
+                case "FM1":
+                    vol[1] = strtoul(param(setting,1));
+                        break;
+                case "FM2":
+                    vol[2] = strtoul(param(setting,1));
+                        break;
+                case "FM3":
+                    vol[3] = strtoul(param(setting,1));
+                        break;
+                case "FM4":
+                    vol[4] = strtoul(param(setting,1));
+                        break;
+                case "FM5":
+                    vol[5] = strtoul(param(setting,1));
+                        break;
+                case "FM6":
+                    vol[6] = strtoul(param(setting,1));
+                        break;
+
+                case "PSG1":
+                    vol[7] = strtoul(param(setting,1));
+                        break;
+                case "PSG2":
+                    vol[8] = strtoul(param(setting,1));
+                        break;
+                case "PSG3":
+                    vol[9] = strtoul(param(setting,1));
+                        break;
+                case "PSGN":
+                    vol[11] = strtoul(param(setting,1));
+                        break;
+
+            }
+        }
+
+    }
+
+    config close;
+
+    ifstream xif[12];
+
+    for (i=1; i <= fm; i++) {
+        present[i] = 1;
+        xif[i].open (std::string("temp\\C") + xmfm[i], ios::in | ios::binary);
+    }
+
+    for (i=7; i <= (psg + 6); i++) {
+        present[i] = 1;
+        xif[i].open (std::string("temp\\C") + xmpsg[i-6], ios::in | ios::binary);
+    }
+
+    if (pcm = 1) {
+        present[10] = 1;
+        xif[10].open (std::string("temp\\C") + xmpcm, ios::in | ios::binary);
+    }
+
+    if (noise = 1) {
+        present[11] = 1;
+        xif[11].open (std::string("temp\\C") + xmnoise, ios::in | ios::binary);
+    }
+
+//'''''''''''''''''''''''''''''''''''''''
+// LOAD ALL PREDEFINED PSG FREQUENCIES ''
+//'''''''''''''''''''''''''''''''''''''''
+
+    ifstream psgfreqs;
+
+    psgfreqs.open (std::string("psg.txt"), ios::in);
+
 
 
     return 0;
