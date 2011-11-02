@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1320276933 source:c:\users\oerg866\desktop\consoleprogs\xm2esf\esfopt\main.cpp
+	<iostream>
+	<fstream>
+	<string>
+	<sys/stat.h>
+	<sys/types.h>
+	<errno.h>
+	<stdint.h>
+	<sys/types.h>
+	<dirent.h>
+	<stdlib.h>
+
