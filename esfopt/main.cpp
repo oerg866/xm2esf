@@ -11,16 +11,18 @@
 
 using namespace std;
 
-#define VERSION "0.1"
+#define VERSION "0.5-stable"
 
-#define writedelay for(count = 0; count <= (delay / 255); count++) { \
+#define writedelay for(count = 0; count < (delay / 255); count++) { \
                     out.put(0xFE); \
                     out.put(255); \
                     delay = delay - 255; \
                 } \
+                if (delay > 0) { \
                     out.put(0xFE); \
                     out.put(delay); \
-                    delay = 0
+                    delay = 0; \
+                }
 
 
 int main(int argc, char *argv[]) {
@@ -41,7 +43,7 @@ int main(int argc, char *argv[]) {
         vol[count] = 0;
     }
 
-    uint8_t ch[12];
+    uint8_t ch[13];
     ch[0] = 0;
     ch[1] = 1;
     ch[2] = 2;
@@ -66,12 +68,11 @@ int main(int argc, char *argv[]) {
     uint8_t chan;
     uint8_t instrument[11];
     for (count = 0; count <= 11; count++) {instrument[count] = 255;}
-    uint16_t freq[10];
+    uint16_t freq[11];
     uint16_t discard2;
     uint8_t fmparam[6];
     bool stop = false;
-    uint16_t delay;
-    return 0;
+    uint16_t delay = 0;
     ofstream out;
 
     out.open (argv[2], fstream::out | fstream::binary | fstream::trunc);
@@ -84,6 +85,8 @@ int main(int argc, char *argv[]) {
                 case 0x00: // Note On
                     writedelay;
                     discard = esf.get();
+                    out.put(command);
+                    out.put(discard);
                     note[chan] = 1;
                     break;
                 case 0x01: // Note Off
@@ -96,19 +99,20 @@ int main(int argc, char *argv[]) {
                 case 0x02: // Set Volume
                     writedelay;
                     discard = esf.get();
-                    if (vol[chan] != discard) {
-                        out.put(command);
-                        out.put(discard);
-                    }
+                    out.put(command);
+                    out.put(discard);
                     vol[chan] = discard;
                     break;
                 case 0x03: // Set frequency / Noise Type
                     writedelay;
                     if (chan != 11) {
                         discard = esf.get();
-                        discard2 = (discard * 256) + esf.get();
+                        discard2 = (discard * 256);
+                        discard = esf.get();
+                        discard2 = discard2 + discard;
                         if (freq[chan] != discard2) {
                             out.put(command);
+                            out.put(discard2 >> 8);
                             out.put(discard);
                         }
                         freq[chan] = discard2;
@@ -132,28 +136,33 @@ int main(int argc, char *argv[]) {
                     instrument[chan] = discard;
                     break;
                 case 0x0F:
-                    if (chan < 6) {
+                    if ((command & 15) <= 6) {
                         writedelay;
                         discard = esf.get();
                         if (fmparam[chan] != discard) {
                             out.put(command);
                             out.put(discard);
                         }
+                        fmparam[chan] = discard;
                     }
-                    else if (chan == 0x0E) {
+                    else if ((command & 15) == 0x0E) {
                         discard = esf.get();
                         delay = delay + discard;
                     }
-                    else if (chan == 0x0F) {
+                    else if ((command & 15) == 0x0F) {
                         stop = true;
+                        out.put(command);
                     }
-                    else if (chan != 0x0E) {
+                    else if ((command & 15) != 0x0E) {
                         writedelay;
+                        out.put(command);
                     }
-
+                    break;
                 default:
                     cout << "Unknown value ignored: " << hex << (command >> 4) << endl;
             }
         }
     }
+    out.close();
+    esf.close();
 }
