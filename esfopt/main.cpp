@@ -11,7 +11,9 @@
 
 using namespace std;
 
-#define VERSION "0.5-stable"
+#define VERSION "0.6-stable-for-real-now"
+
+// TODO: lern2inlinefuncttions
 
 #define writedelay for(count = 0; count < (delay / 255); count++) { \
                     out.put(0xFE); \
@@ -63,11 +65,11 @@ int main(int argc, char *argv[]) {
     uint8_t discard;
     uint8_t note[11]; // Assume note is still on for all channels
 
-    for (count = 0; count <= 11; count++) {note[count] = 1;}
+    for (count = 0; count <= 10; count++) {note[count] = 1;}
 
     uint8_t chan;
     uint8_t instrument[11];
-    for (count = 0; count <= 11; count++) {instrument[count] = 255;}
+    for (count = 0; count <= 10; count++) {instrument[count] = 255;}
     uint16_t freq[11];
     uint16_t discard2;
     uint8_t fmparam[6];
