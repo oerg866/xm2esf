@@ -19,7 +19,7 @@ FUNCTION PBMAIN () AS LONG
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "0.98.1"
+    version$ = "1.00"
 
     '
     ' (C) 2009, 2010, 2011 Oerg866
@@ -34,7 +34,7 @@ FUNCTION PBMAIN () AS LONG
     pi= 3.14159265358979323846264338   ' The Pi is a lie :(
 
     PRINT "XM2ESF - Convert XM to Echo Stream Format"
-    PRINT "*** BETA VERSION "+version$
+    PRINT "*** RELEASE CANDIDATE VERSION "+version$
     PRINT ""
     PRINT "Copyright (C) 2011 Oerg866"
     PRINT ""
@@ -679,60 +679,61 @@ FUNCTION PBMAIN () AS LONG
                 IF xmnote& > 0 AND xmnote& < 97 THEN
                     IF ctype(i) = 0 OR ctype(i) = 1  OR ctype(i) = 3 THEN
                             SELECT CASE xmeff&
-                                CASE 1 TO 4
+                                CASE 1 TO 3
                                           liquidtlo& = 24
                             END SELECT
                             IF liquidtlo& <> 24 THEN
-                                IF curins&(i) <> xmins& AND xmins& <> 0 THEN
-                                    curins&(i) = xmins&
-                                    PUT$ #20, CHR$(&H40 + esfchan&(i))
-                                    PUT$ #20, CHR$(INT(esfins&(curins&(i))))
-                                    liquidtlo& = 0
-                                END IF
-                            END IF
-                            SELECT CASE xmeffdat&
-                            CASE 1 TO 4, &hA, &hC
-                                    curvol&(i) = curvol&(i)
-                            CASE ELSE
-                                          curvol&(i) = 64
-                                          PUT$ #20, CHR$(esfchan&(i) + &h20)
-
-                                          IF ctype(i) = 0 THEN
-                                                 temp& = INT(fmvol(quotient(i) * 64))
-                                                 PUT$ #20, CHR$(temp&)
-                                          ELSE
-                                                temp& = INT(psgvol(quotient(i) * 64))
-                                                PUT$ #20, CHR$(temp&)
-                                          END IF
-                            END SELECT
-                            IF ctype(i) = 0 THEN
-                                PUT$ #20, CHR$(esfchan&(i))
-                                PUT$ #20, CHR$(INT(32 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12)) + 1))
-                            ELSEIF ctype(i) = 1 THEN
-                                PUT$ #20, CHR$(esfchan&(i))
-                                PUT$ #20, CHR$(INT(24 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12))))
-                            ELSE
-                                tmp& = 0
-                                IF noisetype& = 1 THEN
-                                    tmp& = 3
-                                    PUT$ #20, CHR$(&hB)
-                                    IF noisemode& = 0 THEN
-                                        PUT$ #20, CHR$(&h0)
-                                    ELSE
-                                        PUT$ #20, CHR$(&h4)
+                                    IF curins&(i) <> xmins& AND xmins& <> 0 THEN
+                                        curins&(i) = xmins&
+                                        PUT$ #20, CHR$(&H40 + esfchan&(i))
+                                        PUT$ #20, CHR$(INT(esfins&(curins&(i))))
+                                        liquidtlo& = 0
                                     END IF
+                           '     END IF
+                                SELECT CASE xmeffdat&
+                                CASE 1 TO 3, &hA, &hC
+                                        curvol&(i) = curvol&(i)
+                                CASE ELSE
+                                              curvol&(i) = 64
+                                              PUT$ #20, CHR$(esfchan&(i) + &h20)
+
+                                              IF ctype(i) = 0 THEN
+                                                     temp& = INT(fmvol(quotient(i) * 64))
+                                                     PUT$ #20, CHR$(temp&)
+                                              ELSE
+                                                    temp& = INT(psgvol(quotient(i) * 64))
+                                                    PUT$ #20, CHR$(temp&)
+                                              END IF
+                                END SELECT
+                                IF ctype(i) = 0 THEN
+                                    PUT$ #20, CHR$(esfchan&(i))
+                                    PUT$ #20, CHR$(INT(32 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12)) + 1))
+                                ELSEIF ctype(i) = 1 THEN
+                                    PUT$ #20, CHR$(esfchan&(i))
+                                    PUT$ #20, CHR$(INT(24 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12))))
                                 ELSE
-                                    tmp& = 3
-                                    curfreq&(i) = INT((0.5^((curnote&(i))/12-1))/2*851)
-                                    PUT$ #20, CHR$(&h3A)
-                                    PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-                                    PUT$ #20, CHR$(&hB)
-                                    IF noisemode& = 1 THEN
-                                        PUT$ #20, CHR$(&h3)
+                                    tmp& = 0
+                                    IF noisetype& = 1 THEN
+                                        tmp& = 3
+                                        PUT$ #20, CHR$(&hB)
+                                        IF noisemode& = 0 THEN
+                                            PUT$ #20, CHR$(&h0)
+                                        ELSE
+                                            PUT$ #20, CHR$(&h4)
+                                        END IF
                                     ELSE
-                                        PUT$ #20, CHR$(&h7)
-                                    END IF
+                                        tmp& = 3
+                                        curfreq&(i) = INT((0.5^((curnote&(i))/12-1))/2*851)
+                                        PUT$ #20, CHR$(&h3A)
+                                        PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
+                                        PUT$ #20, CHR$(&hB)
+                                        IF noisemode& = 1 THEN
+                                            PUT$ #20, CHR$(&h3)
+                                        ELSE
+                                            PUT$ #20, CHR$(&h7)
+                                        END IF
 
+                                    END IF
                                 END IF
                             END IF
                             liquidtlo& = 0
@@ -777,6 +778,7 @@ FUNCTION PBMAIN () AS LONG
                     effectdat&(i)= &HC
                     effectval&(i) = xmeffdat&
                     PUT$ #20, CHR$(esfchan&(i) + &H20)
+                    temp& = INT(psgvol(xmeffdat& * quotient(i)))
                     PUT$ #20, CHR$(temp&)
 
                  ELSEIF ctype(i) = 3 THEN
@@ -903,7 +905,7 @@ FUNCTION PBMAIN () AS LONG
                                 PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
 
                             CASE 1 TO 3
-                                curfreq&(i) = INT((0.5^((slidestep(i)/12))*2)/2*851)
+                                curfreq&(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
                                             PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
                         END SELECT
                     END IF
@@ -925,7 +927,7 @@ FUNCTION PBMAIN () AS LONG
 
                     ELSEIF ctype(i) = 1 THEN
 
-                     curfreq&(i) = INT((0.5^((slidestep(i)/12))*2)/2*851)
+                     curfreq&(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
                      PUT$ #20, CHR$(esfchan&(i) + &H30)
                      temp& = INT(curfreq&(i) MOD 16)
                      PUT$ #20, CHR$(temp&)
@@ -934,8 +936,8 @@ FUNCTION PBMAIN () AS LONG
 
                     ELSEIF ctype(i) = 3 THEN
 
-                    IF noisetype& = 1 THEN
-                     curfreq&(i) = INT((0.5^((slidestep(i)/12))*2)/2*851)
+                    IF noisetype& = 0 THEN
+                     curfreq&(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
                      PUT$ #20, CHR$(&h3A)    'PSG Channel 3
                      temp& = INT(curfreq&(i) MOD 16)
                      PUT$ #20, CHR$(temp&)
@@ -944,11 +946,6 @@ FUNCTION PBMAIN () AS LONG
 
 
                     END IF
-
-
-                        ' Ignore this effect for anything else
-
-
                    END IF
                 CASE 4
                    vibstep(i) = vibstep(i) + vibspeed&(i)*4
@@ -961,14 +958,14 @@ FUNCTION PBMAIN () AS LONG
                                 PUT$ #20, CHR$(INT(curfreq&(i) / 256))
                                 PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
                    ELSEIF ctype(i) <> 2 THEN
-                   curfreq&(i) = INT((0.5^((slidestep(i)/12))*2)/2*851)
+                   curfreq&(i) = INT((0.5^((conversion)/12-1))/2*851)
                                 IF ctype(i) <> 3 THEN
                                     PUT$ #20, CHR$(esfchan&(i) + &h30)
+                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
                                 ELSE
                                     PUT$ #20, CHR$(&h3A)
+                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
                                 END IF
-                                PUT$ #20, CHR$(INT(curfreq&(i) / 256))
-                                PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
                    END IF
 
 
@@ -1109,6 +1106,7 @@ FUNCTION psgvol(a AS DOUBLE) AS BYTE
     IF a = 64 THEN b = 0
     IF a = 0  THEN b = 15
     psgvol= b
+
 END FUNCTION
 
 FUNCTION psgvol2(a AS INTEGER) AS BYTE
@@ -1119,7 +1117,6 @@ FUNCTION psgvol2(a AS INTEGER) AS BYTE
     IF b > 15 THEN b = 15
     IF a = 64 THEN b = 0
     IF a = 0  THEN b = 15
-
     psgvol2 = b
 
 END FUNCTION
