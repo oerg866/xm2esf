@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -8,6 +9,11 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <sstream>
+#include <functional>
+#include <cctype>
+#include <algorithm>
 
 /**
     XM 2 ESF   by Oerg866   C++ Port
@@ -17,7 +23,7 @@
 using namespace std;
 
 #define pi = 3.14159265358979323846264338;
-#define version = "0.99a C++ Port WIP";
+#define version = "1.00.56a";
 
 string trim(string p, const char* t = " tnrfv")
 {
@@ -28,6 +34,7 @@ string trim(string p, const char* t = " tnrfv")
     return s;
 }
 
+
 //string lcase(string ppp) {
 //    for (uint32_t i = 0; i < ppp.size; i++) {
 //        ppp.substr(i,1) = tolower(ppp.substr(i,1));
@@ -35,6 +42,18 @@ string trim(string p, const char* t = " tnrfv")
 //    return (ppp);
 //}
 
+string strtolower(string ppp) {
+    for (uint16_t i = 0; i < ppp.size(); i++) {
+        ppp[i] = tolower(ppp[i]);
+    }
+    return (ppp);
+}
+string convertInt(uint32_t number) {
+
+   stringstream ss;//create a stringstream
+   ss << number;//add number to the stream
+   return ss.str();//return a string with the contents of the stream
+}
 string spleft(string strn)
 {
     uint16_t i = 0;
@@ -58,14 +77,22 @@ string spleft(string strn)
         speft = speft + car;
         i++;
         car = strn.substr(i, 1);
-        if ((i+1) > strn.size))
+        if ((i+1) > strn.size())
         {
             return (speft + car);
         }
     }
     return (speft);
 }
+uint32_t ldword(char bytes[])
+{
+    return bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0];
+}
 
+uint16_t rword(char bytes[])
+{
+    return bytes[1] << 8 | bytes[0];
+}
 string param(string strn, uint16_t b)
 {
     uint16_t c = 0;
@@ -109,7 +136,7 @@ int main(int argc, char *argv[])
 {
 
     cout << "XM2ESF - Convert XM to Echo Stream Format\n";
-    cout << "*** BETA VERSION " << version << "\n";
+    cout << "Release Candidate \n";
     cout << "\n";
     cout << "Copyright (C) 2011 Oerg866\n";
     cout << "\n";
@@ -130,7 +157,7 @@ int main(int argc, char *argv[])
     cout << "program :)\n";
     cout << "\n";
 
-    if (argc == < 3)
+    if (argc < 3)
     {
         cout << "usage: xm2esf <infile> <outfile>\n";
         cout << "\n";
@@ -164,9 +191,13 @@ int main(int argc, char *argv[])
 
     uint8_t xmfm[7];        // Contains the corresponding XM channel for each FM Channel
     uint8_t xmpsg[4];       // Contains the corresponding XM channel for each PSG channel
+    uint8_t xmpcm;          // Corresponding XM channel for the PCM channel
+    uint8_t xmnoise;        // Corresponding XM channel for the PSG Noise channel
 
     uint8_t fm;             // Amount of FM channels
     uint8_t psg;            // Amount of PSG channels
+    uint8_t pcm;            // PCM y/n
+    uint8_t noise;          // PSG noise y/n
     uint8_t present[12];    // Used to define if a channel is present
 
     // XM to ESF Instrument assignment variables
@@ -253,6 +284,8 @@ int main(int argc, char *argv[])
     uint16_t psgnote[12];   // Pre-defined PSG frequencies for every note (source: echo table)
 
     uint8_t ctype[12];      // Channel type (defines internally which channels from 1 to 11 are FM, PSG, PCM and Noise
+    uint8_t noisetype;
+    uint8_t noisemode;
 
 /////////////////////////////////////////////////////////
 // INIT CODE BEGINS HERE :)
@@ -273,214 +306,392 @@ int main(int argc, char *argv[])
     config.open (argv[2], ios::in);
 
     string setting;
-    string xm;
-
+    string xmfile;
+    ifstream xm;
+    string tmp;
+    ofstream temporaryfile;
     uint8_t filetype = 1;
     uint8_t esfloop = 1;
 
     uint8_t tempo = 7;
 
-    while (strlwr(setting)) != "[instruments]")
+    while (setting != "[instruments]")
     {
         getline(config, setting);
+        setting = strtolower(setting);
+
         if (setting.substr(0,1) != "#")
         {
-            switch (spleft(setting))
-            {
-            case "FILE":
-                xm = param(setting, 1);
-                cout << "XM File: " << xm;
-                break;
-            case "TYPE":
-                switch (param(setting, 1))
-                {
-                case "BGM":
+            if (spleft(setting) == "FILE") {
+                xmfile = param(setting, 1);
+                cout << "XM File: " << xmfile;
+            }
+
+            if (spleft(setting) == "TYPE") {
+                if (param(setting,1) == "BGM") {
                     filetype = 1;
-                    break;
-                case "SFX"
-                        filetype = 2;
-                    break;
                 }
-                switch (param(setting, 2))
-                {
-                case "LOOP":
+                else if (param(setting,1) == "SFX") {
+                    filetype = 2;
+                }
+
+                if (param(setting,2) == "LOOP") {
                     esfloop = 1;
                     if (filetype == 2)
                     {
-                        cout << "Input file errorneously declares loop while being a SFX. File rejected!";
-                        config close;
+                        cout << "ERROR: Input file errorneously declares loop while being a SFX. File rejected!";
+                        config.close();
                         return 1;
                     }
-                    break;
-                case "NOLOOP":
-                    esfloop = 0;
-                    break;
                 }
-                break;
-            case "TEMPO":
-                tempo = strtoul(param(setting, 1));
-                break;
-            case "FM":
-                fm = strtoul(param(setting, 1));
+                else {esfloop = 0;}
+            }
+
+            if (spleft(setting) == "TEMPO") {
+                tempo = strtoul(param(setting, 1).c_str(), NULL, 10);
+            }
+
+            if (spleft(setting) == "FM") {
+                fm = strtoul(param(setting, 1).c_str(), NULL, 10);
                 if (fm > 6) {
                     cout << "ERROR: Declared more than 6 FM channels.";
-                    config close;
-                    return 1
+                    config.close();
+                    return 1;
                 }
-                break;
-            case "PSG":
-                psg = strtoul(param(setting, 1));
+            }
+
+            if (spleft(setting) == "PSG") {
+                psg = strtoul(param(setting, 1).c_str(), NULL, 10);
                 if (psg > 3) {
-                    cout << "ERROR: Declared more than 3 PSG channels.":
-                    config close;
-                    return 1
+                    cout << "ERROR: Declared more than 3 PSG channels.";
+                    config.close();
+                    return 1;
                 }
-                break;
-            case "PCM":
+            }
+            if (spleft(setting) == "PCM") {
                 pcm = 1;
-                if (fm = 6) {
-                    cout << "ERROR: Cannot have 6 FM channels and PCM too."
-                    config close;
-                    return 1
+                if (fm == 6) {
+                    cout << "ERROR: Cannot have FM6 and PCM active at the same time.";
+                    config.close();
+                    return 1;
                 }
-                break:
-            case "NOISE"
-                noise = 1;
-                break;
+            }
+            if (spleft(setting) == "NOISE") {noise = 1;}
 
-            case "FM1":
-                xmfm[1] = strtoul(param(setting, 1));
-                break;
-            case "FM2":
-                xmfm[2] = strtoul(param(setting, 1));
-                break;
-            case "FM3":
-                xmfm[3] = strtoul(param(setting, 1));
-                break;
-            case "FM4":
-                xmfm[4] = strtoul(param(setting, 1));
-                break;
-            case "FM5":
-                xmfm[5] = strtoul(param(setting, 1));
-                break;
-            case "FM6":
-                xmfm[6] = strtoul(param(setting, 1));
-                break;
-            case "PCMC":
-                xmpcm = strtoul(param(setting,1));
-                break;
-            case "PSG1":
-                xmpsg[1] = strtoul(param(setting, 1));
-                break;
-            case "PSG2":
-                xmpsg[2] = strtoul(param(setting, 1));
-                break;
-            case "PSG3":
-                xmpsg[3] = strtoul(param(setting, 1));
-                break;
-            case "PSGN":
-                xmnoise& = strtoul(param(setting, 1));
-                break;
-            case "NOISEFREQ":
-                noisetype& = strtoul(param(setting, 1));
-                break;
-            case "NOISETYPE":
-                noisemode& = strtoul(param(setting, 1));
-                break;
+
+            if (setting.substr(0,2) == "FM") {
+                xmfm[strtoul(setting.substr(2,1).c_str(), NULL, 10)] = strtoul(param(setting, 1).c_str(), NULL, 10);
+            }
+            else if (setting.substr(0,3) == "PSG") {
+                if (setting.substr(3,1) != " ") {
+                    if (setting.substr(3,1) != "N") {
+                        xmpsg[strtoul(setting.substr(3,1).c_str(), NULL, 10)] = strtoul(param(setting, 1).c_str(), NULL, 10);
+                    }
+                    else xmnoise = strtoul(param(setting, 1).c_str(), NULL, 10);
+                }
+            }
+            else if (setting.substr(0,3) == "PCMC") {
+                xmpcm = strtoul(param(setting, 1).c_str(), NULL, 10);
+            }
+
+            if (param(setting, 1) == "NOISEFREQ") {
+                noisetype = strtoul(param(setting, 1).c_str(), NULL, 10);
+            }
+            if (param(setting, 1) == "NOISETYPE") {
+                noisemode = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
         }
     }
 
-    cout << "Loading XM file: " << xm;
+    cout << "Loading XM file: " << xmfile;
 
-    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-        system("loadxm \"" + xm + "\"");
-    #elif defined (__UNIX__)
-        xm.replace(s.begin(), s.end(), ' ', '\ ');
-        system("loadxm " + xm);
-    #endif
 
-    while (strlwr(setting) != "[volume]" {
-            getline(config,setting);
-            if (setting.substr(0,1) != "#") {
-                switch (spleft(setting)) {
-                    case "FM1":
-                        pitch[1] = strtoul(param(setting, 1));
-                        break;
-                    case "FM2":
-                        pitch[2] = strtoul(param(setting, 1));
-                        break;
-                    case "FM3":
-                        pitch[3] = strtoul(param(setting, 1));
-                        break;
-                    case "FM4":
-                        pitch[4] = strtoul(param(setting, 1));
-                        break;
-                    case "FM5":
-                        pitch[5] = strtoul(param(setting, 1));
-                        break;
-                    case "FM6":
-                        pitch[6] = strtoul(param(setting, 1));
-                        break;
+////////////////////////////////////
+// XM Loader ;)
+    {
 
-                    case "PSG1":
-                        pitch[7] = strtoul(param(setting, 1));
-                        break;
-                    case "PSG2":
-                        pitch[8] = strtoul(param(setting, 1));
-                        break;
-                    case "PSG3":
-                        pitch[9] = strtoul(param(setting, 1));
-                        break;
-                    case "PSGN":
-                        pitch[11] = strtoul(param(setting, 1));
-                        break;
+            char buffer[1024];
+            char header[1024];
+            stringstream tempfnm;
+            char dataout[257];
+            uint32_t headerlength;
+            uint32_t songlength;
+            uint32_t restart;
+            uint32_t channels;
+            uint32_t patterns;
+            uint32_t instruments;
+            uint32_t freqtable;
+            uint32_t tempo;
+            uint32_t bpm;
+            uint32_t i;
+            uint32_t crow;
+            uint32_t ccan;
+            uint32_t ff;
+            uint32_t x;
+            uint32_t y;
+            uint32_t lider;
+            uint32_t nrow;
+            uint32_t done;
+            uint16_t bitss;
+            uint32_t psize;
+            uint32_t j;
+            uint32_t plength;
+            uint32_t total_length;
+            uint32_t lrestart;
+            ifstream xm;
+            ofstream inf;
+            ofstream xmout;
+            ifstream xmin;
+            unsigned char temp[2];
+            struct patterndata {
+                unsigned char note;
+                unsigned char inst;
+                unsigned char vc;
+                unsigned char et;
+                unsigned char ep;
+            };
 
-                }
+            struct patterndata pdata[127][1024];
+
+            total_length = 0;
+            cout << "loadxm/c by oerg866\n";
+            cout << "v1.00\n\n";
+
+            inf.open("temp/file.inf", ios::out);
+            xm.open(xmfile.c_str(), ios::in | ios::binary);
+            if (!xm) {
+                cout << "Error opening the file....." <<endl;
+                return 1;
+            }
+
+            xm.read(buffer, 17);
+
+            if (strncmp(buffer, "Extended Module: ", 17) != 0) {
+                cout << "File not an XM" <<endl;
+                return 2;
+            }
+            xm.read(buffer,20);
+            buffer[20]=0;
+            cout << "Song name: " << buffer << endl;
+            xm.read(buffer,1);
+            buffer[1]=0;
+
+            xm.read(buffer,20);
+            buffer[1]=0;
+            cout << "Tracker name: " << buffer << endl;
+            xm.read(buffer,2);
+            xm.read(buffer,4);
+            buffer[1]=0;
+            headerlength = ldword(buffer);
+            xm.read(header,headerlength - 4);
+            songlength = rword(&header[0]);
+            restart = rword(&header[2]);
+            channels = rword(&header[4]);
+            stringstream test;
+            test << channels;
+            string test2;
+            test2 = test.str();
+
+            inf << convertInt(channels) << endl;
+            patterns = rword(&header[6]);
+            instruments = rword(&header[8]);
+            freqtable = rword(&header[10]);
+            tempo = rword(&header[12]);
+            bpm = rword(&header[14]);
+
+            uint16_t * tpattern;
+            uint16_t * lpattern;
+            tpattern = new uint16_t[songlength * sizeof(*tpattern)];
+            lpattern = new uint16_t[(patterns)* sizeof(*lpattern)];
+
+            for (i = 0; i < (songlength); i++) {
+                tpattern[i] = header[16 + i];
             }
 
 
+
+            for (i = 0; i < (patterns); i++) {
+
+                crow = 0;
+                ccan = 1;
+                ff = 0;
+
+                xm.read (buffer, 4);
+                lider = ldword(buffer);
+                xm.read (buffer, lider - 4);
+                nrow = rword(&buffer[1]);
+                lpattern[i] = nrow;
+                psize = rword(&buffer[3]);
+                // 703
+                if (crow != nrow) {
+                    while (crow != nrow) {
+                        xm.read(buffer, 1);
+                        done = 0;
+                        if (buffer[0] > 127) {
+                            bitss = buffer[0];
+                            if ((bitss & 1) == 1) {
+                                xm.read(buffer,1);
+                                pdata[ccan][crow].note = buffer[0];
+                            }
+                            else { pdata[ccan][crow].note = 0;}
+
+
+                            if ((bitss & 2) == 2) {
+                                xm.read(buffer,1);
+                                pdata[ccan][crow].inst = buffer[0];
+                            }
+                            else { pdata[ccan][crow].inst = 0;}
+
+
+                            if ((bitss & 4) == 4) {
+                                xm.read(buffer,1);
+                                pdata[ccan][crow].vc = buffer[0];
+                            }
+                            else { pdata[ccan][crow].vc = 0;}
+
+
+                            if ((bitss & 8) == 8) {
+                                xm.read(buffer,1);
+                                pdata[ccan][crow].et = buffer[0];
+                            }
+                            else { pdata[ccan][crow].et = 0;}
+
+
+                            if ((bitss & 16) == 16) {
+                                xm.read(buffer,1);
+                                pdata[ccan][crow].ep = buffer[0];
+                            }
+                            else { pdata[ccan][crow].ep = 0;}
+                            done = 1;
+                        }
+
+                        if (done == 1) {
+                            ccan++;
+                            if (ccan > channels) {
+                                ccan = 1;
+                                if ((crow < nrow) && (ff == 0)) {
+                                    for (j = 1; j < (channels + 1); j++) {
+                                        if (pdata[j][crow].et == 13) {
+                                            lpattern[i] = crow + 1;
+                                            ff = 1;
+                                        }
+                                    }
+                                }
+                                crow++;
+                            }
+                        }
+
+                        if (done != 1) {
+                            // if done = 1 then goto 703 wtf man
+                            pdata[ccan][crow].note = buffer[0];
+                            xm.read(buffer,4);
+                            pdata[ccan][crow].inst = buffer[0];
+                            pdata[ccan][crow].vc = buffer[1];
+                            pdata[ccan][crow].et = buffer[2];
+                            pdata[ccan][crow].ep = buffer[3];
+                            ccan++;
+                            if (ccan > channels) {
+                                ccan = 1;
+                                if ((crow < nrow) && (ff == 0)) {
+                                    for (j = 1; j < (channels + 1); j++) {
+                                        if (pdata[j][crow].et == 13) {
+                                            lpattern[i] = crow + 1;
+                                            ff = 1;
+                                        }
+                                    }
+                                }
+                                crow++;
+                            }
+                        }
+                        // goto 703
+                    }
+                }
+                else {xm.read(buffer,1);}
+
+                for (x = 1; x < (channels + 1); x++) {
+                    tempfnm.str("");
+                    tempfnm.clear();
+                    tempfnm << "temp/P" << convertInt(i) << "C" << convertInt(x) << ".tmp";
+                    temporaryfile.open (tempfnm.str().c_str());
+                    for (y = 0; y < lpattern[i]; y++) {
+                        dataout[0] = pdata[x][y].note;
+                        dataout[1] = pdata[x][y].inst;
+                        dataout[2] = pdata[x][y].vc;
+                        dataout[3] = pdata[x][y].et;
+                        dataout[4] = pdata[x][y].ep;
+                        temporaryfile.write(dataout, 5);
+                    }
+                    temporaryfile.close();
+                }
+
+            }
+            xm.close();
+
+            for (i = 1; i < (channels + 1); i++) {
+                tempfnm.str("");
+                tempfnm.clear();
+                tempfnm << "temp/C" << convertInt(i) << ".tmp";
+                xmout.open(tempfnm.str().c_str(), ios::out | ios::binary);
+                for (x = 0; x < songlength; x++){
+                    tempfnm.str("");
+                    tempfnm.clear();
+                    tempfnm << "temp/P" << convertInt(tpattern[x]) << "C" << convertInt(i) << ".tmp";
+                    xmin.open(tempfnm.str().c_str(), ios::in | ios::binary);
+                    xmin.read(buffer, lpattern[tpattern[x]] * 5);
+                    xmout.write(buffer, lpattern[tpattern[x]] * 5);
+                    xmin.close();
+                }
+                xmout.close();
+            }
+
+            for (x = 0; x < songlength; x++) {
+                if (x == restart) {
+                    lrestart = total_length;
+                }
+                total_length = total_length + lpattern[tpattern[x]];
+            }
+
+
+            inf << convertInt(lrestart) << endl;
+            inf << convertInt(total_length) << endl;
+
+            inf.close();
+
+            delete lpattern;
+            delete tpattern;
     }
 
-    while (strlwr(setting) != "[end]") {
-        getline(config, setting);
+////////////////////////////////////
+
+    while (setting != "[volume]") {
+        getline(config,setting);
+        transform(setting.begin(), setting.end(), setting.begin(), std::ptr_fun<int, int>(std::tolower));
         if (setting.substr(0,1) != "#") {
-            switch (spleft(setting)) {
-                case "FM1":
-                    vol[1] = strtoul(param(setting,1));
-                        break;
-                case "FM2":
-                    vol[2] = strtoul(param(setting,1));
-                        break;
-                case "FM3":
-                    vol[3] = strtoul(param(setting,1));
-                        break;
-                case "FM4":
-                    vol[4] = strtoul(param(setting,1));
-                        break;
-                case "FM5":
-                    vol[5] = strtoul(param(setting,1));
-                        break;
-                case "FM6":
-                    vol[6] = strtoul(param(setting,1));
-                        break;
-
-                case "PSG1":
-                    vol[7] = strtoul(param(setting,1));
-                        break;
-                case "PSG2":
-                    vol[8] = strtoul(param(setting,1));
-                        break;
-                case "PSG3":
-                    vol[9] = strtoul(param(setting,1));
-                        break;
-                case "PSGN":
-                    vol[11] = strtoul(param(setting,1));
-                        break;
-
+            if (setting.substr(0,2) == "FM") {
+                pitch[strtoul(setting.substr(2,1).c_str(), NULL, 10)] = strtoul(param(setting, 1));
+            }
+            else if (setting.substr(0,3) == "PSG") {
+                if (setting.substr(3,1) != "N") {
+                    pitch[strtoul(setting.substr(3,1) + 6)] = strtoul(param(setting, 1));
+                }
+                else pitch[11] = strtoul(param(setting, 1));
             }
         }
+    }
 
+    while (strlwr(setting) != "[volume]") {
+        getline(config,setting);
+        if (setting.substr(0,1) != "#") {
+            if (setting.substr(0,2) == "FM") {
+                vol[strtoul(setting.substr(2,1))] = strtoul(param(setting, 1));
+            }
+            else if (setting.substr(0,3) == "PSG") {
+                if (setting.substr(3,1) != "N") {
+                    vol[strtoul(setting.substr(3,1) + 6)] = strtoul(param(setting, 1));
+                }
+                else vol[11] = strtoul(param(setting, 1));
+            }
+        }
     }
 
     config close;
@@ -489,22 +700,22 @@ int main(int argc, char *argv[])
 
     for (i=1; i <= fm; i++) {
         present[i] = 1;
-        xif[i].open (std::string("temp\\C") + xmfm[i], ios::in | ios::binary);
+        xif[i].open (std::string("temp/C") + xmfm[i], ios::in | ios::binary);
     }
 
     for (i=7; i <= (psg + 6); i++) {
         present[i] = 1;
-        xif[i].open (std::string("temp\\C") + xmpsg[i-6], ios::in | ios::binary);
+        xif[i].open (std::string("temp/C") + xmpsg[i-6], ios::in | ios::binary);
     }
 
-    if (pcm = 1) {
+    if (pcm == 1) {
         present[10] = 1;
-        xif[10].open (std::string("temp\\C") + xmpcm, ios::in | ios::binary);
+        xif[10].open (std::string("temp/C") + xmpcm, ios::in | ios::binary);
     }
 
-    if (noise = 1) {
+    if (noise == 1) {
         present[11] = 1;
-        xif[11].open (std::string("temp\\C") + xmnoise, ios::in | ios::binary);
+        xif[11].open (std::string("temp/C") + xmnoise, ios::in | ios::binary);
     }
 
 //'''''''''''''''''''''''''''''''''''''''
@@ -514,8 +725,32 @@ int main(int argc, char *argv[])
     ifstream psgfreqs;
 
     psgfreqs.open (std::string("psg.txt"), ios::in);
+    uint8_t t = 0;
+    uint16_t psgnote[96]
 
+    while (!psgfreqs.good) {
+        psgfreqs.get(tmp, 4, ",");
+        psgnote[t] = strtoul(tmp.c_str, NULL, 10);
+        t++;
+    }
 
+    psgfreqs.close();
+
+    // Set up channel types
+
+    ctype[1] = 0;
+    ctype[2] = 0;
+    ctype[3] = 0;
+    ctype[4] = 0;
+    ctype[5] = 0;
+    ctype[6] = 0;
+    ctype[7] = 1;
+    ctype[8] = 1;
+    ctype[9] = 1;
+    ctype[10] = 2;
+    ctype[11] = 3;
+
+    // restart and total will be set up already
 
     return 0;
 }
