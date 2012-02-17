@@ -14,6 +14,7 @@
 #include <functional>
 #include <cctype>
 #include <algorithm>
+#include <math.h>
 
 /**
     XM 2 ESF   by Oerg866   C++ Port
@@ -57,55 +58,57 @@ string convertInt(uint32_t number) {
 string spleft(string strn)
 {
     uint16_t i = 0;
-    string car;
-    string comp;
-    string speft;
-    car = strn[0];
-    if (car[0] == 0x34)
+    string car = "";
+    string comp = "";
+    string speft = "";
+    car = strn.substr(0,1);
+    if (car.substr(0,1).c_str()[0] == 0x34)
     {
         comp = "\"";
         i = 1;
-        car = strn[1];
+        car = strn.substr(1, 1);
     }
     else
     {
         comp = " ";
     }
+    if (strn.size() == 1) {return (strn);};
 
     while (car != comp)
     {
         speft = speft + car;
         i++;
-        car = strn.substr(i, 1);
         if ((i+1) > strn.size())
         {
+            car = strn.c_str()[i];
             return (speft + car);
         }
+        car = strn.c_str()[i];
     }
-    return (speft);
+    return speft;
 }
 uint32_t ldword(char bytes[])
 {
-    return bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0];
+    return  (unsigned char) bytes[3] << 24 |  (unsigned char) bytes[2] << 16 |  (unsigned char) bytes[1] << 8 |  (unsigned char) bytes[0];
 }
 
 uint16_t rword(char bytes[])
 {
-    return bytes[1] << 8 | bytes[0];
+    return  (unsigned char) bytes[1] << 8 |  (unsigned char) bytes[0];
 }
 string param(string strn, uint16_t b)
 {
     uint16_t c = 0;
     uint16_t i = 0;
-    string comp;
-    string speft;
-    string car;
-    car = strn[0];
-    if (car[0] = 0x34)
+    string comp = "";
+    string speft = "";
+    string car = "";
+    car = strn.substr(0,1);
+    if (car.substr(0,1).c_str()[0] == 0x34)
     {
-        comp = "\"";
+        comp = 0x34;
         i = 1;
-        car = strn[1];
+        car = strn.c_str()[1];
     }
     else
     {
@@ -118,8 +121,8 @@ string param(string strn, uint16_t b)
         {
             speft = speft + car;
             i++;
-            car = strn[i];
-            if ((i+1) > sizeof(strn))
+            car = strn.c_str()[i];
+            if ((i) > strn.size())
             {
                 speft = "";
                 return (speft);
@@ -129,7 +132,7 @@ string param(string strn, uint16_t b)
         c++;
         car = speft;
     }
-    return trim(spleft(speft.substr(i)));
+    return spleft(strn.substr(i));
 }
 
 int main(int argc, char *argv[])
@@ -304,8 +307,10 @@ int main(int argc, char *argv[])
 //  ' This is the XIF file parser. It is long, andthe coding style is probably pretty bad. But! it works :P
 //  ' The error handler is not very intelligent yet. But, it'll be, sooner or later. Probably later =P
 
+    cout << "1" <<endl;
     ifstream config;        // Configuration input file
-    config.open (argv[2], ios::in);
+    config.open (argv[1], ios::in);
+    cout << "1" <<endl;
 
     string setting;
     string xmfile;
@@ -316,28 +321,35 @@ int main(int argc, char *argv[])
     uint8_t esfloop = 1;
 
     uint8_t tempo = 7;
+    cout << "1" <<endl;
+
+    if (config.fail()) {
+        cout << "FAILED" << endl;
+        return 77;
+    }
 
     while (setting != "[instruments]")
     {
         getline(config, setting);
-        setting = strtolower(setting);
+        transform(setting.begin(), setting.end(), setting.begin(), std::ptr_fun<int, int>(std::tolower));
 
         if (setting.substr(0,1) != "#")
         {
-            if (spleft(setting) == "FILE") {
+                cout << spleft(setting) <<" - " << param(setting, 1) << endl;
+            if (spleft(setting) == "file") {
                 xmfile = param(setting, 1);
-                cout << "XM File: " << xmfile;
+                cout << "XM File: " << xmfile << endl;
             }
 
-            if (spleft(setting) == "TYPE") {
-                if (param(setting,1) == "BGM") {
+            if (spleft(setting) == "type") {
+                if (param(setting,1) == "bgm") {
                     filetype = 1;
                 }
-                else if (param(setting,1) == "SFX") {
+                else if (param(setting,1) == "sfx") {
                     filetype = 2;
                 }
 
-                if (param(setting,2) == "LOOP") {
+                if (param(setting,2) == "loop") {
                     esfloop = 1;
                     if (filetype == 2)
                     {
@@ -349,11 +361,11 @@ int main(int argc, char *argv[])
                 else {esfloop = 0;}
             }
 
-            if (spleft(setting) == "TEMPO") {
+            if (spleft(setting) == "tempo") {
                 tempo = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
 
-            if (spleft(setting) == "FM") {
+            if (spleft(setting) == "fm") {
                 fm = strtoul(param(setting, 1).c_str(), NULL, 10);
                 if (fm > 6) {
                     cout << "ERROR: Declared more than 6 FM channels.";
@@ -362,7 +374,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (spleft(setting) == "PSG") {
+            if (spleft(setting) == "psg") {
                 psg = strtoul(param(setting, 1).c_str(), NULL, 10);
                 if (psg > 3) {
                     cout << "ERROR: Declared more than 3 PSG channels.";
@@ -370,7 +382,7 @@ int main(int argc, char *argv[])
                     return 1;
                 }
             }
-            if (spleft(setting) == "PCM") {
+            if (spleft(setting) == "pcm") {
                 pcm = 1;
                 if (fm == 6) {
                     cout << "ERROR: Cannot have FM6 and PCM active at the same time.";
@@ -378,28 +390,28 @@ int main(int argc, char *argv[])
                     return 1;
                 }
             }
-            if (spleft(setting) == "NOISE") {noise = 1;}
+            if (spleft(setting) == "noise") {noise = 1;}
 
 
-            if (setting.substr(0,2) == "FM") {
+            if (setting.substr(0,2) == "fm") {
                 xmfm[strtoul(setting.substr(2,1).c_str(), NULL, 10)] = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
-            else if (setting.substr(0,3) == "PSG") {
+            else if (setting.substr(0,3) == "psg") {
                 if (setting.substr(3,1) != " ") {
-                    if (setting.substr(3,1) != "N") {
+                    if (setting.substr(3,1) != "n") {
                         xmpsg[strtoul(setting.substr(3,1).c_str(), NULL, 10)] = strtoul(param(setting, 1).c_str(), NULL, 10);
                     }
                     else xmnoise = strtoul(param(setting, 1).c_str(), NULL, 10);
                 }
             }
-            else if (setting.substr(0,3) == "PCMC") {
+            else if (setting.substr(0,3) == "pcmc") {
                 xmpcm = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
 
-            if (param(setting, 1) == "NOISEFREQ") {
+            if (param(setting, 1) == "noisefreq") {
                 noisetype = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
-            if (param(setting, 1) == "NOISETYPE") {
+            if (param(setting, 1) == "noisetype") {
                 noisemode = strtoul(param(setting, 1).c_str(), NULL, 10);
             }
         }
@@ -458,7 +470,8 @@ int main(int argc, char *argv[])
             total_length = 0;
             cout << "loadxm/c by oerg866\n";
             cout << "v1.00\n\n";
-
+            xmfile = xmfile.substr(1,xmfile.size()-3);
+            cout << xmfile << endl;
             inf.open("temp/file.inf", ios::out);
             xm.open(xmfile.c_str(), ios::in | ios::binary);
             if (!xm) {
@@ -479,13 +492,14 @@ int main(int argc, char *argv[])
             buffer[1]=0;
 
             xm.read(buffer,20);
-            buffer[1]=0;
+            buffer[20]=0;
             cout << "Tracker name: " << buffer << endl;
             xm.read(buffer,2);
             xm.read(buffer,4);
-            buffer[1]=0;
+            buffer[4]=0;
             headerlength = ldword(buffer);
             xm.read(header,headerlength - 4);
+            buffer[headerlength - 4] = 0;
             songlength = rword(&header[0]);
             restart = rword(&header[2]);
             channels = rword(&header[4]);
@@ -503,33 +517,40 @@ int main(int argc, char *argv[])
 
             uint16_t * tpattern;
             uint16_t * lpattern;
-            tpattern = new uint16_t[songlength * sizeof(*tpattern)];
-            lpattern = new uint16_t[(patterns)* sizeof(*lpattern)];
+            tpattern = new uint16_t[songlength];
+            lpattern = new uint16_t[patterns];
 
             for (i = 0; i < (songlength); i++) {
                 tpattern[i] = header[16 + i];
             }
 
 
+            cout << "Amount of patterns: " << convertInt(patterns) << endl;
 
+            cout << "Song length: " << convertInt(songlength) << endl;
             for (i = 0; i < (patterns); i++) {
-
                 crow = 0;
                 ccan = 1;
                 ff = 0;
 
                 xm.read (buffer, 4);
                 lider = ldword(buffer);
+               cout << "lider: " << convertInt(lider-4);
+//                cout << convertInt(lider) << "<---";
                 xm.read (buffer, lider - 4);
                 nrow = rword(&buffer[1]);
+                cout << "FILEPOS: " << xm.tellg() << endl;
+                cout << convertInt(nrow) << "<---" << convertInt(i) << "  ";
                 lpattern[i] = nrow;
+                cout << convertInt((unsigned char) buffer[3])<<"|"<<convertInt(buffer[4]) << endl;
                 psize = rword(&buffer[3]);
+                cout << endl << "psize: " << convertInt(psize) ;
                 // 703
                 if (crow != nrow) {
                     while (crow != nrow) {
                         xm.read(buffer, 1);
                         done = 0;
-                        if (buffer[0] > 127) {
+                        if ((unsigned char) buffer[0] > 127) {
                             bitss = buffer[0];
                             if ((bitss & 1) == 1) {
                                 xm.read(buffer,1);
@@ -744,7 +765,8 @@ int main(int argc, char *argv[])
     uint8_t t = 0;
 
     for(t=0;t<96;t++){
-        psgnote[t] = (0.5^((t)/12-1))/2*851
+        psgnote[t] = (pow(0.5,((t-1)/12-1)))/2*851;
+        cout << convertInt(psgnote[t]) << endl;
     }
 
 
