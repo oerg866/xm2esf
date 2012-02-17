@@ -189,6 +189,8 @@ int main(int argc, char *argv[])
 
     // XM to ESF Channel assignment variables
 
+    uint16_t tempindex;
+
     uint8_t xmfm[7];        // Contains the corresponding XM channel for each FM Channel
     uint8_t xmpsg[4];       // Contains the corresponding XM channel for each PSG channel
     uint8_t xmpcm;          // Corresponding XM channel for the PCM channel
@@ -668,54 +670,69 @@ int main(int argc, char *argv[])
         transform(setting.begin(), setting.end(), setting.begin(), std::ptr_fun<int, int>(std::tolower));
         if (setting.substr(0,1) != "#") {
             if (setting.substr(0,2) == "FM") {
-                pitch[strtoul(setting.substr(2,1).c_str(), NULL, 10)] = strtoul(param(setting, 1));
+                pitch[atoi((setting.substr(2,1).c_str()))] = atoi(param(setting, 1).c_str());
             }
             else if (setting.substr(0,3) == "PSG") {
                 if (setting.substr(3,1) != "N") {
-                    pitch[strtoul(setting.substr(3,1) + 6)] = strtoul(param(setting, 1));
+                    pitch[atoi(setting.substr(3,1).c_str()) + 6] = atoi(param(setting, 1).c_str());
                 }
-                else pitch[11] = strtoul(param(setting, 1));
+                else pitch[11] = atoi(param(setting, 1).c_str());
             }
         }
     }
 
-    while (strlwr(setting) != "[volume]") {
+    while (setting != "[volume]") {
         getline(config,setting);
+        transform(setting.begin(), setting.end(), setting.begin(), std::ptr_fun<int, int>(std::tolower));
         if (setting.substr(0,1) != "#") {
             if (setting.substr(0,2) == "FM") {
-                vol[strtoul(setting.substr(2,1))] = strtoul(param(setting, 1));
+                vol[atoi(setting.substr(2,1).c_str())] = atoi(param(setting, 1).c_str());
             }
             else if (setting.substr(0,3) == "PSG") {
                 if (setting.substr(3,1) != "N") {
-                    vol[strtoul(setting.substr(3,1) + 6)] = strtoul(param(setting, 1));
+                    vol[atoi(setting.substr(3,1).c_str()) + 6] = atoi(param(setting, 1).c_str());
                 }
-                else vol[11] = strtoul(param(setting, 1));
+                else vol[11] = atoi(param(setting, 1).c_str());
             }
         }
     }
 
-    config close;
+    config.close();
 
     ifstream xif[12];
 
+    stringstream tempfnm;
+
     for (i=1; i <= fm; i++) {
         present[i] = 1;
-        xif[i].open (std::string("temp/C") + xmfm[i], ios::in | ios::binary);
+        tempfnm.str("");
+        tempfnm.clear();
+        tempfnm << "temp/C" << convertInt(xmfm[i]) << ".tmp";
+        xif[i].open (tempfnm.str().c_str(), ios::in | ios::binary);
     }
 
     for (i=7; i <= (psg + 6); i++) {
         present[i] = 1;
-        xif[i].open (std::string("temp/C") + xmpsg[i-6], ios::in | ios::binary);
+        tempfnm.str("");
+        tempfnm.clear();
+        tempfnm << "temp/C" << convertInt(xmpsg[i-6]) << ".tmp";
+        xif[i].open (tempfnm.str().c_str(), ios::in | ios::binary);
     }
 
     if (pcm == 1) {
         present[10] = 1;
-        xif[10].open (std::string("temp/C") + xmpcm, ios::in | ios::binary);
+        tempfnm.str("");
+        tempfnm.clear();
+        tempfnm << "temp/C" << convertInt(xmpcm) << ".tmp";
+        xif[10].open (tempfnm.str().c_str(), ios::in | ios::binary);
     }
 
     if (noise == 1) {
         present[11] = 1;
-        xif[11].open (std::string("temp/C") + xmnoise, ios::in | ios::binary);
+        tempfnm.str("");
+        tempfnm.clear();
+        tempfnm << "temp/C" << convertInt(xmnoise) << ".tmp";
+        xif[11].open (tempfnm.str().c_str(), ios::in | ios::binary);
     }
 
 //'''''''''''''''''''''''''''''''''''''''
@@ -724,17 +741,12 @@ int main(int argc, char *argv[])
 
     ifstream psgfreqs;
 
-    psgfreqs.open (std::string("psg.txt"), ios::in);
     uint8_t t = 0;
-    uint16_t psgnote[96]
 
-    while (!psgfreqs.good) {
-        psgfreqs.get(tmp, 4, ",");
-        psgnote[t] = strtoul(tmp.c_str, NULL, 10);
-        t++;
+    for(t=0;t<96;t++){
+        psgnote[t] = (0.5^((t)/12-1))/2*851
     }
 
-    psgfreqs.close();
 
     // Set up channel types
 
