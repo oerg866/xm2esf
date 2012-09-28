@@ -11,3 +11,15 @@
 	<dirent.h>
 	<stdlib.h>
 
+1320284230 source:d:\users\oerg866.oergwin7\desktop\consoleprogs\xm2esf\esfopt\main.cpp
+	<iostream>
+	<fstream>
+	<string>
+	<sys/stat.h>
+	<sys/types.h>
+	<errno.h>
+	<stdint.h>
+	<sys/types.h>
+	<dirent.h>
+	<stdlib.h>
+

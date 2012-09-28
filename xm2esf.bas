@@ -11,89 +11,81 @@ TYPE PATTERNDATA
 END TYPE
 
 FUNCTION PBMAIN () AS LONG
+
     '************************************
-    '* XM2ESF/oerg                      *
+    '* XM2ESF                           *
     '************************************
     '
     ' Converts XM-format module music to
     ' Echo Stream Format
     '
     ' VERSION:
-    version$ = "1.00"
+
+    builddate$ = "09-28-2012"
+    version$ = "1.00 RC2"
 
     '
-    ' (C) 2009, 2010, 2011 Oerg866
+    ' (C) 2009, 2010, 2011, 2012 Oerg866
     '
-    ' XM Splitter (C) 2007 Nineko
-
-    ' Developed according to official Echo docs. (C) 2011 Sik
+    ' Developed in compliance with official Echo docs. (C) 2010, 2011, 2012 Sik
 
         '
     DIM pi AS DOUBLE
 
     pi= 3.14159265358979323846264338   ' The Pi is a lie :(
 
-    PRINT "XM2ESF - Convert XM to Echo Stream Format"
-    PRINT "*** RELEASE CANDIDATE VERSION "+version$
+
+    PRINT "XM2ESF - XM to Echo Stream Format converter
     PRINT ""
-    PRINT "Copyright (C) 2011 Oerg866"
+    PRINT "Version "+version$ + " " + builddate$
     PRINT ""
-    PRINT "Echo (C) 2011 Sik      http://echo.mdscene.net (Website N/A yet)"
+    PRINT "Copyright (C) 2011-2012 Oerg866             http://www.mdscene.net"
+    PRINT "                                            http://github.com/oerg866/xm2esf"
     PRINT ""
-    PRINT "PLEASE REPORT BUGS TO GITHUB OR oerg866@tototek.com!!"
+    PRINT "Echo (C) 2010-2012 Sik                      http://echo.mdscene.net"
     PRINT ""
-    PRINT "This program is freeware. It must not be sold. This is a temporary"
-    PRINT "disclaimer until we actually bother setting up license stuffs =P"
+    PRINT "Please report bugs using email at oerg866@tototek.com or use any"
+    PRINT "other viable method, such as forum threads, etc."
     PRINT ""
-    PRINT "Please take a few seconds to acknowledge that this"
-    PRINT "Software is currently in alpha state, and may or may not"
-    PRINT "Function correctly. You hereby agree that its creator can not"
-    PRINT "be held liable in case anything goes wrong."
+    PRINT "This program is free. It must not be sold. This is a temporary"
+    PRINT "disclaimer until a proper license is in place."
+    PRINT ""
+    COLOR 14,0
+    PRINT "Please acknowledge that this program is not in a stable state yet"
+    PRINT "and its creator can not be held responsible for consequences"
+    PRINT "evolving from the usage, be it proper or improper, of this"
+    PRINT "program."
+    COLOR 7,0
     PRINT ""
     PRINT "Also, lots of hours of bugfixing and testing went into this."
-    PRINT "Please show a little compassion or something when using this"
-    PRINT "program :)"
+    PRINT "Please keep this in mind when using this program."
     PRINT ""
-    PRINT "Please wait two seconds or press q to quit"
+    PRINT ""
+    PRINT ""
 
-    counter& = 20
-    FOR il& = 1 TO counter&
-    a$ = INKEY$
-    IF LCASE$(a$) = "q" THEN
-
-        PRINT ""
-        PRINT "Sorry to hear that. Good bye !"
-
-            EXIT FUNCTION
-    END IF
-            SLEEP 100
-    NEXT il&
-
-
-
+    SLEEP 1000
 
     IF COMMAND$ = "" THEN
         PRINT "usage: xm2esf <infile> <outfile>"
         PRINT ""
-        PRINT "<infile>  is the pointer to an XIF file. An XIF file is a descriptor"
+        PRINT "<infile>  is an XIF file. An XIF file is a descriptor"
         PRINT "          file that contains all the parameters which xm2esf will"
         PRINT "          respect while creating the resulting ESF file, and also the"
         PRINT "          path and filename to the input XM file."
         PRINT ""
-        PRINT "          Creating an XIF file is possible using 'xm2esfgui' by"
-        PRINT "          Oerg866. It is very easy to use and creates a XIF file"
+        PRINT "          Creating an XIF file is possible using the bundled 'xm2esfgui'"
+        PRINT "          It is very easy to use and creates a XIF file"
         PRINT "          that is perfectly parseable by xm2esf :)"
         PRINT ""
         PRINT "          For other software and information, please visit"
-        PRINT "          http://echo.mdscene.net/software"
+        PRINT "          http://segaretro.org/Echo"
         PRINT ""
         PRINT "---<PRESS ANY KEY TO CONTINUE TO NEXT PAGE>"
         WAITKEY$
         PRINT "<outfile> is the output path ad filename xm2esf will use to create"
         PRINT "          the resulting ESF file. Please note that if this file exists"
         PRINT "          it WILL BE OVERWRITTEN, even if you encounter a bug and the"
-        PRINT "          conversion somehow fails (well.. it shouldn't :P but just"
-        PRINT "          keep in mind to back up often while xm2esf is in alpha stage"
+        PRINT "          conversion somehow fails ."
         PRINT ""
         PRINT "---<PRESS ANY KEY TO QUIT>"
         WAITKEY$
@@ -103,7 +95,7 @@ FUNCTION PBMAIN () AS LONG
 
 
         END
-        END IF
+    END IF
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' INITIALIZE ALL VARIABLES
@@ -206,6 +198,10 @@ FUNCTION PBMAIN () AS LONG
 
     DIM ctype(1 TO 11)  AS INTEGER      ' Channel type (defines internally which channels from 1 to 11 are FM, PSG, PCM and Noise
 
+    DIM loopins&(1 TO 11)               ' Variables for (re)storing instruments on looping
+
+    DIM lastfx&(1 TO 11)                ' Variables for picking up pitch related effects
+    DIM lastfd&(1 TO 11)                ' Variables for picking up pitch related effects
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' INIT CODE BEGINS HERE :)
@@ -221,7 +217,7 @@ FUNCTION PBMAIN () AS LONG
     ' most tempo values other than 150 will mean that the actual esf's speed will only be able to approximate
     ' the actual XM speed.
 
-    tempo& = 7      ' Default is 7. A tempo of 150;7 is the same as the default many trackers use (125;6)
+    tempo& = 7      ' Default is 7. A tempo of 150;7 is almost the same as the default many trackers use (125;6)
 
 
     KILL COMMAND$(2)
@@ -332,6 +328,7 @@ FUNCTION PBMAIN () AS LONG
 '' original XM loader (QB/VB6). Ported and used
 '' with permission. Thanks, nineko!
 ''''''''''''''''''''''''''''''''''''''''''''''''''''
+''    LOADXM xm$
     PRINT "loading XM file: " + xm$
     s$ = "loadxm " +  CHR$(34) + xm$ + CHR$(34)
     SHELL s$
@@ -348,8 +345,8 @@ FUNCTION PBMAIN () AS LONG
 
         IF MID$(setting$,1,1) <> "#" THEN
 
-        LINE INPUT #1, setting$
-        esfins&(VAL(spleft(setting$))) = VAL("&H" + param(setting$,1))
+            LINE INPUT #1, setting$
+            esfins&(VAL(spleft(setting$))) = VAL("&H" + param(setting$,1))
 
         ELSE
             LINE INPUT #1, setting$
@@ -472,21 +469,15 @@ FUNCTION PBMAIN () AS LONG
 '' LOAD ALL PREDEFINED PSG FREQUENCIES ''
 '''''''''''''''''''''''''''''''''''''''''
 
-    i = FREEFILE
-    OPEN "psg.txt" FOR INPUT AS #i
+
 
     t&=0
-    WHILE NOT EOF(i)
+    FOR t& = 0 TO 70
+        psgnote&(t&) = VAL(READ$(t&))
+    NEXT t&
 
-    LINE INPUT #i, c$
-    psgnote&(t&) = VAL(c$)
-
-    t&=t&+1
-    WEND
-    CLOSE #i
     PRINT "PSG Freq init."
 
-    '            freq& = INT(fmnote&(subtone&) * (2^octave&))
 
     ' Define channel types
     ' 0 = FM (default)
@@ -537,7 +528,13 @@ FUNCTION PBMAIN () AS LONG
 
     FOR currow = 1 TO total&
         IF currow-1 = restart& THEN
-            IF esfloop& = 1 THEN PUT$ #20, CHR$(&hFD)
+            IF esfloop& = 1 THEN
+                PUT$ #20, CHR$(&hFD)
+                ' Store instruments for looping
+                FOR i = 1 TO 11
+                    loopins&(i) = curins&(i)
+                NEXT i
+            END IF
         END IF
 
 
@@ -566,6 +563,10 @@ FUNCTION PBMAIN () AS LONG
 '           F0x     Set speed
 
 
+                    IF effectdat&(i) <> 255 THEN
+                        lastfx&(i) = effectdat&(i)
+                        lastfd&(i) = effectval&(i)
+                    END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Speed
                 IF xmeff& = &hF THEN
                     tempo& = xmeffdat&
@@ -587,6 +588,7 @@ FUNCTION PBMAIN () AS LONG
                     effectval&(i) = xmeffdat&
                     arpnote1&(i) = INT(xmeffdat& / 16)
                     arpnote2&(i) = INT(xmeffdat& MOD 16)
+                    slidestep(i) = curnote&(i)
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Panning
                 IF xmeff& = 8 THEN
@@ -622,18 +624,19 @@ FUNCTION PBMAIN () AS LONG
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Tone Portamento
                 IF xmeff& = 3 THEN
-                        effectdat&(i) = 3
-                        effectval&(i) = xmeffdat&
-                        IF effectdat&(i) > 4 OR effectdat&(i) = 1 THEN
-                            slidestep(i) = curnote&(i)
-                            IF effectdat&(i) = 3 THEN
-                                IF slidespeed&(i) < 0 THEN
-                                    slidespeed&(i) = (-1) * xmeffdat&
-                                ELSE
-                                    slidespeed&(I) = xmeffdat&
-                                END IF
+                    IF lastfx&(i) > 4 THEN slidestep(i) = curnote&(i)
+
+                    IF effectdat&(i) = 3 THEN
+                            IF slidespeed&(i) < 0 THEN
+                                slidespeed&(i) = (-1) * xmeffdat&
+                            ELSE
+                                slidespeed&(I) = xmeffdat&
                             END IF
-                        END IF
+                    END IF
+
+                    effectdat&(i) = 3
+                    effectval&(i) = xmeffdat&
+
                     IF xmnote& > 0 AND xmnote& < 97 THEN
                       IF slidestep(i) <> 0 THEN
                        IF xmnote& + pitch&(i) < slidestep(i) THEN slidespeed&(i) = (-1)*xmeffdat& ELSE slidespeed&(i) = xmeffdat&
@@ -645,31 +648,18 @@ FUNCTION PBMAIN () AS LONG
                         slidetarget&(i) = xmnote& + pitch&(i)
                     END IF
                 END IF
-'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Portamento Up
-                IF xmeff& = 1 THEN
-
-                        IF effectdat&(i) <> 1 THEN slidestep(i) = curnote&(i)
-                        effectdat&(i) = 1
-                        effectval&(i) = xmeffdat&
-                        IF xmnote& < 97 AND xmnote& > 0 THEN
-                            curnote&(i) = xmnote& +pitch&(i)
-                            slidestep(i) = curnote&(i)
-                        END IF
-                        slidespeed&(i) = xmeffdat&
-                        sliDetarget&(i) = 96
-                END IF
+                                                          0
 '''''''''''''''''''''''''''''''''''''''''''''''' Set current note variable
+
                 IF xmnote& < 97 AND xmnote& > 0 THEN  curnote&(i) = xmnote& +pitch&(i)
 
-                IF xmeff& = 2 THEN
-                        effectdat&(i) = 2
+'''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Portamento Up / Down
+                IF xmeff& = 1 OR xmeff& = 2 THEN
+                        IF lastfx&(i) > 4 THEN slidestep(i) = curnote&(i)
+                        effectdat&(i) = xmeff&
                         effectval&(i) = xmeffdat&
-                        IF xmnote& < 97 AND xmnote& > 0 THEN
-                            curnote&(i) = xmnote& +pitch&(i)
-                            slidestep(i) = curnote&(i)
-                        END IF
-                        slidespeed&(i) = -xmeffdat&
-                        slidetarget&(i) = 0
+                        slidespeed&(i) =  -((xmeff&-1)*2-1) *xmeffdat&
+                        slidetarget&(i) = -(xmeff&-2) * 96
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' Handle a <Note Off>
                 IF xmnote& = 97 THEN
@@ -677,23 +667,15 @@ FUNCTION PBMAIN () AS LONG
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' Handle a new note
                 IF xmnote& > 0 AND xmnote& < 97 THEN
-                    IF ctype(i) = 0 OR ctype(i) = 1  OR ctype(i) = 3 THEN
-                            SELECT CASE xmeff&
-                                CASE 1 TO 3
-                                          liquidtlo& = 24
-                            END SELECT
-                            IF liquidtlo& <> 24 THEN
-                                    IF curins&(i) <> xmins& AND xmins& <> 0 THEN
+                    IF ctype(i) <> 2 THEN
+                            IF xmeff& <> 3 THEN
+                                IF curins&(i) <> xmins& AND xmins& <> 0 THEN
                                         curins&(i) = xmins&
                                         PUT$ #20, CHR$(&H40 + esfchan&(i))
                                         PUT$ #20, CHR$(INT(esfins&(curins&(i))))
-                                        liquidtlo& = 0
-                                    END IF
-                           '     END IF
-                                SELECT CASE xmeffdat&
-                                CASE 1 TO 3, &hA, &hC
-                                        curvol&(i) = curvol&(i)
-                                CASE ELSE
+                                END IF
+
+                                IF xmeff& <> 3 AND xmeff& <> &hc THEN
                                               curvol&(i) = 64
                                               PUT$ #20, CHR$(esfchan&(i) + &h20)
 
@@ -704,7 +686,8 @@ FUNCTION PBMAIN () AS LONG
                                                     temp& = INT(psgvol(quotient(i) * 64))
                                                     PUT$ #20, CHR$(temp&)
                                               END IF
-                                END SELECT
+                                END IF
+
                                 IF ctype(i) = 0 THEN
                                     PUT$ #20, CHR$(esfchan&(i))
                                     PUT$ #20, CHR$(INT(32 * INT(curnote&(i) / 12) + (2 * (curnote&(i) MOD 12)) + 1))
@@ -736,7 +719,6 @@ FUNCTION PBMAIN () AS LONG
                                     END IF
                                 END IF
                             END IF
-                            liquidtlo& = 0
                     ELSEIF ctype(i) = 2 THEN
                             curins&(i) = xmins&
                             PUT$ #20, CHR$(&hC)
@@ -757,10 +739,10 @@ FUNCTION PBMAIN () AS LONG
                           ELSE
                               IF INT(xmeffdat& MOD 16) > 0 THEN
                                   ' Volume slide DOWN
-                                  volslidespeed(i) = -(tempo& - 1)
+                                  volslidespeed(i) = -(INT(xmeffdat& MOD 16))
                                   effectval&(i) = INT(xmeffdat& MOD 16)
                               ELSEIF INT(xmeffdat& / 16) > 0 THEN
-                                  volslidespeed(i) = (tempo& - 1)
+                                  volslidespeed(i) = INT(xmeffdat& / 16)
                                   effectval&(i) = INT(xmeffdat& / 16)
                               END IF
                           END IF
@@ -808,52 +790,22 @@ FUNCTION PBMAIN () AS LONG
                           IF ctype(i) < 2 THEN
                                SELECT CASE pf& MOD 3
                                     CASE 0
-
-                                        IF ctype(i) = 0 THEN
-                                            curfreq&(i) = fmfreq2(curnote&(i))
-                                            PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) / 256))
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
-
-                                        ELSE
-
-                                            curfreq&(i) = INT((0.5^((curnote&(i))/12-1))/2*851)
-                                            PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-
-                                        END IF
+                                        slidestep(i) = curnote&(i)
                                     CASE 1
-
-                                        IF ctype(i) = 0 THEN
-
-                                             curfreq&(i) = fmfreq2(curnote&(i) + arpnote1&(i))
-                                            PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) / 256))
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
-
-                                        ELSE
-
-                                            curfreq&(i) = INT((0.5^((curnote&(i) + arpnote1&(i))/12-1))/2*851)
-                                            PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-
-                                        END IF
+                                        slidestep(i) = curnote&(i) + arpnote1&(i)
                                     CASE 2
-
-                                        IF ctype(i) = 0 THEN
-                                             curfreq&(i) = fmfreq2(curnote&(i) + arpnote2&(i))
-                                             PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) / 256))
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
-
-                                        ELSE
-
-                                            curfreq&(i) = INT((0.5^((curnote&(i) + arpnote2&(i))/12-1))/2*851)
-                                            PUT$ #20, CHR$(esfchan&(i) + &h30)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-
-                                        END IF
+                                        slidestep(i) = curnote&(i) + arpnote2&(i)
                                     END SELECT
+                                    IF ctype(i) = 0 THEN
+                                        curfreq&(i) = fmfreq(slidestep(i))
+                                        PUT$ #20, CHR$(esfchan&(i) + &h30)
+                                        PUT$ #20, CHR$(INT(curfreq&(i) / 256))
+                                        PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
+                                    ELSE
+                                        curfreq&(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
+                                        PUT$ #20, CHR$(esfchan&(i) + &h30)
+                                        PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
+                                    END IF
                           END IF
                     END IF
                 CASE &hA
@@ -861,7 +813,7 @@ FUNCTION PBMAIN () AS LONG
                    IF pf& < effectval&(i)+1 THEN
                     IF ctype(i) <> 2 THEN
                             IF volslidepos(i) < 65 AND volslidepos(i) > 0 THEN
-                                volslidepos(i) = volslidepos(i) + volslidespeed(i)/5
+                                volslidepos(i) = volslidepos(i) + volslidespeed(i)/tempo&
                                 IF volslidepos(i) < 0 THEN volslidepos(i) = 0
                                curvol&(i) = volslidepos(i)
 
@@ -882,35 +834,8 @@ FUNCTION PBMAIN () AS LONG
                     END IF
                    END IF
 
-                CASE 1 TO 2
+                CASE 1 TO 3
 
-                    IF ctype(i) <> 2 THEN
-                        slidestep(i) = slidestep(i) + slidespeed&(i) / 20
-                        IF effectdat&(i) = 2 THEN
-                            IF slidetarget&(i) > slidestep(i) THEN slidestep(i) = slidetarget&(i)
-                        ELSE
-                            IF slidetarget&(i) < slidestep(i) THEN slidestep(i) = slidetarget&(i)
-                        END IF
-                        IF ctype(i)= 3 THEN
-                            PUT$ #20, CHR$(&h3A)
-                        ELSE
-                            PUT$ #20, CHR$(esfchan&(i) + &H30)
-                        END IF
-
-                        SELECT CASE ctype(i)
-                            CASE 0
-
-                                curfreq&(i) = fmfreq(slidestep(i))
-                                PUT$ #20, CHR$(INT(curfreq&(i) / 256))
-                                PUT$ #20, CHR$(INT(curfreq&(i) MOD 256))
-
-                            CASE 1 TO 3
-                                curfreq&(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
-                                            PUT$ #20, CHR$(INT(curfreq&(i) MOD 16)) + CHR$(INT(curfreq&(i) / 16))
-                        END SELECT
-                    END IF
-
-                CASE 3
                     slidestep(i) = slidestep(i) + slidespeed&(i) / 20
                     IF slidespeed&(i) < 0 AND slidetarget&(i) > slidestep(i) THEN slidestep(i) = slidetarget&(i)
                     IF slidespeed&(i) > 0 AND slidetarget&(i) < slidestep(i) THEN slidestep(i) = slidetarget&(i)
@@ -950,6 +875,7 @@ FUNCTION PBMAIN () AS LONG
                 CASE 4
                    vibstep(i) = vibstep(i) + vibspeed&(i)*4
                    conversion = SIN(pi/180 * vibstep(i))*vibdepth&(i)/5 + curnote&(i)
+                   slidestep(i) = conversion
 
 
                    IF ctype(i) = 0 THEN
@@ -977,12 +903,28 @@ FUNCTION PBMAIN () AS LONG
         NEXT pf&
     NEXT currow
 
-    IF esfloop& = 0 THEN PUT$ #20, CHR$(&hFF) ELSE PUT$ #20, CHR$(&hFC)
+    IF esfloop& = 0 THEN
+        PUT$ #20, CHR$(&hFF)
+    ELSE
+        ' Restore instruments on looping
+        FOR i = 1 TO 11
+            IF loopins&(i) <> curins&(i) AND i <> 10 THEN
+                PUT$ #20, CHR$(&H40 + esfchan&(i))
+                PUT$ #20, CHR$(INT(esfins&(loopins&(i))))
+            END IF
+        NEXT i
+        PUT$ #20, CHR$(&hFC)
+    END IF
 
     PRINT "Conversion done!"
 
     CLOSE
 
+
+    DATA 851,803,758,715,675,637,601,568,536,506,477,450,425,401,379,357,337,318,300
+    DATA 284,268,253,238,225,212,200,189,178,168,159,150,142,134,126,119,112,106,100
+    DATA  94, 89, 84, 79, 75, 71, 67, 63, 59, 56, 53, 50, 47, 44, 42, 39, 37, 35, 33
+    DATA  31, 29, 28, 26, 25, 23, 22, 21, 19, 18, 17, 16, 15, 14, 14
 END FUNCTION
 
 
