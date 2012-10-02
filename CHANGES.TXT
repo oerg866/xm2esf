@@ -4,6 +4,7 @@ xm2esf changelog                    MM-DD-YYYY
 
 - Fixed an issue with the wrong or uninitialized note data as base on portamentos with note-on on the same row
 - added license
+- Fixed major crash, hang and memory corruption issue, potentially crashing the OS, producing garbled output, etc
 
 ! Compiler changed to FreeBASIC 0.24
 ! Linux version added for xm2esf, loadxm and esfopt
