@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     cout << "esfopt -- Oerg866's ESF Optimizer v" << VERSION << endl;
 
     if (argc < 3) {
-        cout << "Error: No command line arguments specified";
+        cout << "Error: No command line arguments specified" << endl;
         return 666;
     }
 
