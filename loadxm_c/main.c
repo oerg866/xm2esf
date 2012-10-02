@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
     printf("v1.00\n\n");
 
     FILE *xm = fopen(argv[1], "rb");
-    FILE *inf = fopen("TEMP/file.inf", "w");
+    FILE *inf = fopen("temp/file.inf", "w");
 
     if (!xm) {
         printf("Error opening the file: %s\n", strerror(errno));
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
         else { fread(buffer, 1, 1, xm); }
 
         for (x = 1; x < (channels + 1); x++) {
-            sprintf(tempfnm, "TEMP/P%dC%d.tmp", i, x);
+            sprintf(tempfnm, "temp/P%dC%d.tmp", i, x);
             FILE *tmp = fopen(tempfnm, "wb");
             for (y = 0; y < lpattern[i]; y++) {
                 dataout[0] = pdata[x][y].note;
@@ -222,10 +222,10 @@ int main(int argc, char* argv[])
     fclose(xm);
 
     for (i = 1; i < (channels + 1); i++) {
-        sprintf(tempfnm, "TEMP/C%d.tmp", i);
+        sprintf(tempfnm, "temp/C%d.tmp", i);
         FILE *xmout = fopen(tempfnm, "wb");
         for (x = 0; x < songlength; x++){
-            sprintf(tempfnm, "TEMP/P%dC%d.tmp", tpattern[x], i);
+            sprintf(tempfnm, "temp/P%dC%d.tmp", tpattern[x], i);
             FILE *xmin = fopen(tempfnm, "rb");
             fread(buffer, 1, lpattern[tpattern[x]] * 5, xmin);
             fwrite(buffer , 1 , lpattern[tpattern[x]] * 5, xmout);
@@ -252,3 +252,4 @@ int main(int argc, char* argv[])
     return 0;
 
 }
+
