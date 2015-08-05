@@ -264,7 +264,6 @@ PRINT "Also, lots of hours of bugfixing and testing went into this."
 PRINT "Please keep this in mind when using this program."
 PRINT ""
 PRINT ""
-PRINT ""
 
 SLEEP 1000
 
