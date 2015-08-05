@@ -132,7 +132,7 @@ FUNCTION fmvol(a AS DOUBLE) AS BYTE
 
     DIM b AS INTEGER
     b = &H7F - int(log10(a * 9.0 / 64 + 1.0) * &H7F + 0.5)
-    print "FMVOL : ";b
+
     IF b > 127 THEN b = 127
     IF b < 0 THEN b = 0
     IF a = 64 THEN b = 0
@@ -146,7 +146,7 @@ FUNCTION fmvol2(a AS INTEGER) AS BYTE
 
     DIM b AS INTEGER
     b = &H7F -  int(log10(a * 9.0 / 64  + 1.0) * &H7F + 0.5)
-    print "FMVOL : ";b
+  
     IF b > 127 THEN b = 127
     IF b < 0 THEN b = 0
     IF a = 64 THEN b = 0
@@ -191,8 +191,8 @@ END FUNCTION
  
     dim builddate as string
     dim version as string
-    builddate = "10-20-2012"
-    version = "1.00 RC6"
+    builddate = "03-30-2014"
+    version = "1.00 RC7"
 #IFDEF __FB_DOS__
     version = version + " DOS"
 #Endif
@@ -204,9 +204,9 @@ END FUNCTION
 #Endif
 
     '
-    ' (C) 2009, 2010, 2011, 2012 Oerg866
+    ' (C) 2009-2014 Oerg866
     '
-    ' Developed in compliance with official Echo docs. (C) 2010, 2011, 2012 Sik
+    ' Developed in compliance with official Echo docs. (C) 2010-2014 Sik, Oerg866, TiTAN
 
         '
     RMDIR "./TEMP"
@@ -217,10 +217,10 @@ END FUNCTION
     PRINT ""
     PRINT "Version " + version + " " + builddate
     PRINT ""
-    PRINT "Copyright (C) 2011-2012 Oerg866             http://www.mdscene.net"
+    PRINT "Copyright (C) 2011-2014 Oerg866             http://www.mdscene.net"
     PRINT "                                            http://github.com/oerg866/xm2esf"
     PRINT ""
-    PRINT "Echo (C) 2010-2012 Sik                      http://echo.mdscene.net"
+    PRINT "Echo (C) 2010-2014 Sik, Oerg866, TiTAN      http://echo.mdscene.net"
     PRINT ""
     PRINT "Please report bugs using email at oerg866@tototek.com or use any"
     PRINT "other viable method, such as forum threads, etc."
@@ -308,6 +308,7 @@ END FUNCTION
     DIM xmpsg(1 TO 3) as long      ' Contains the corresponding XM channel for each PSG channel
     dim xmnoise as long
     dim xmpcm as long
+    dim xmsync as long
     
     DIM fm as long                 ' Amount of FM channels
     DIM psg as long                ' Amount of PSG channels
@@ -450,6 +451,7 @@ END FUNCTION
     dim tmp as long
     dim pf as long
     
+    dim tmpstr as string
 
 
     WHILE LCASE(setting) <> "[instruments]"
@@ -533,6 +535,9 @@ END FUNCTION
                   noisetype = VAL(param(setting, 1))
               CASE "NOISETYPE"
                   noisemode = VAL(param(setting, 1))
+              CASE "SYNC"
+                  print "XMCSIDFA"
+                  xmsync = VAL(param(setting, 1))
                   '1 = white noise, 0 = periodic noise
 
            END SELECT
@@ -688,6 +693,8 @@ END FUNCTION
 
     END IF
     PRINT "Channels assigned and loaded"
+    
+    OPEN "TEMP\C" + TRIM(STR(xmsync)) + ".tmp" FOR BINARY AS #12
 
 '''''''''''''''''''''''''''''''''''''''''
 '' LOAD ALL PREDEFINED PSG FREQUENCIES ''
@@ -755,7 +762,10 @@ END FUNCTION
 
     PRINT "Starting conversion."
 
+    tmpstr = "     "
+
     FOR currow = 1 TO total
+        print currow
         IF currow-1 = restart THEN
             IF esfloop = 1 THEN
                 PUT #20,, chr(&hFD)
@@ -766,7 +776,20 @@ END FUNCTION
             END IF
         END IF
 
-
+        ' SYNC
+        
+        GET #12, , tmpstr
+        
+        xmnote=      ASC(MID(tmpstr, 1, 1))
+        xmins =      ASC(MID(tmpstr, 2, 1))
+        xmvol =      ASC(MID(tmpstr, 3, 1))
+        xmeff =      ASC(MID(tmpstr, 4, 1))
+        xmeffdat =   ASC(MID(tmpstr, 5, 1))
+        if xmnote = 97 then
+            put #20, , chr(&hFB)
+         print "ASBDFIHSDIPOFHJSDIPFJSOPDKJKPJSF"
+        end if
+        
 
         FOR i = 1 TO 11
             IF present(i) = 1 THEN
@@ -924,7 +947,7 @@ END FUNCTION
                                 IF ctype(i) = 0 THEN
                                     PUT #20, , chr(esfchan(i))
                                     PUT #20, , chr(INT(32 * INT(curnote(i) / 12) + (2 * (curnote(i) MOD 12)) + 1))
-                                    curfreq(i) = fmfreq2(curnote(i))
+                                    curfreq(i) = fmfreq(curnote(i))
                                 ELSEIF ctype(i) = 1 THEN
                                     PUT #20, , chr(esfchan(i))
                                     PUT #20, , chr(INT(24 * INT(curnote(i) / 12) + (2 * (curnote(i) MOD 12))))
@@ -985,10 +1008,10 @@ END FUNCTION
                           ELSE
                               IF INT(xmeffdat MOD 16) > 0 THEN
                                   ' Volume slide DOWN
-                                  volslidespeed(i) = -(INT(xmeffdat MOD 16))*4
+                                  volslidespeed(i) = -(INT(xmeffdat MOD 16))
                                   effectval(i) = INT(xmeffdat MOD 16)
                               ELSEIF INT(xmeffdat / 16) > 0 THEN
-                                  volslidespeed(i) = INT(xmeffdat / 16) / 16 *4
+                                  volslidespeed(i) = INT(xmeffdat / 16) / 16
                                   effectval(i) = INT(xmeffdat / 16)
                               END IF
                           END IF
@@ -1008,7 +1031,7 @@ END FUNCTION
                     effectval(i) = xmeffdat
                     PUT #20, , chr(esfchan(i) + &H20)
                     TEMP = INT(psgvol(xmeffdat * quotient(i)))
-                    print temp; i; esfchan(i)
+                   
                     PUT #20, , chr(TEMP)
                     curvol(i) = xmeffdat
                  ELSEIF ctype(i) = 3 THEN
@@ -1055,7 +1078,7 @@ END FUNCTION
                             IF volslidepos(i) < 65 AND volslidepos(i) > 0 THEN
                                 volslidepos(i) = volslidepos(i) + volslidespeed(i)
                                 IF volslidepos(i) < 0 THEN volslidepos(i) = 0
-                                if ctype(i) = 1 then  print volslidepos(i)  
+                           '    if ctype(i) = 1 then  print volslidepos(i)  
                                curvol(i) = volslidepos(i)
 
                             ELSE
@@ -1100,7 +1123,7 @@ END FUNCTION
         PUT #20, , chr(&hFF)
     ELSEif restart > 0 then
         ' Restore instruments on looping
-        FOR i = 1 TO 11
+        FOR i = 1 TO 6
             IF loopins(i) <> curins(i) AND i <> 10 THEN
                 PUT #20, , chr(&H40 + esfchan(i))
                 PUT #20, , chr(INT(esfins(loopins(i))))
