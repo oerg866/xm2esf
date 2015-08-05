@@ -191,8 +191,8 @@ END FUNCTION
  
     dim builddate as string
     dim version as string
-    builddate = "03-30-2014"
-    version = "1.00 RC7"
+    builddate = "12-04-2014"
+    version = "1.1 Beta"
 #IFDEF __FB_DOS__
     version = version + " DOS"
 #Endif
@@ -813,6 +813,58 @@ END FUNCTION
 '           Cxx     Set volume
 '           Dxx     Pattern break (Always interpreted as D00!)
 '           F0x     Set speed
+
+' XM Volume column commands handled by xm2esf:
+'           vxx     Set Volume
+'           pxx     Set Panning
+
+'               Process XM Volume column
+
+                ' Prepare Set Volume
+                if xmvol >= &H10 and xmvol <= &H50 then
+                    xmvoldat = xmvol - &H10
+                    xmvol = 1
+                '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Set Volume
+                 IF ctype(i) = 0 THEN
+                    PUT #20, , chr(esfchan(i) + &H20)
+                    TEMP = INT(fmvol(xmvoldat * quotient(i)))
+                    PUT #20, , chr(TEMP)
+                    curvol(i) = xmvoldat
+                 ELSEIF ctype(i)=1 THEN
+                    PUT #20, , chr(esfchan(i) + &H20)
+                    TEMP = INT(psgvol(xmvoldat * quotient(i)))
+                    PUT #20, , chr(TEMP)
+                    curvol(i) = xmvoldat
+                 ELSEIF ctype(i) = 3 THEN
+                    PUT #20, , chr(&h2B)
+                    TEMP = INT(psgvol(xmvoldat * quotient(i)))
+                    PUT #20, , chr(TEMP)
+                    curvol(i) = xmvoldat
+                 ELSE
+                    'ignore for pcm +noise
+                 END IF
+                END IF
+                
+                ' Prepare Set Panning
+                if xmvol >= &HC0 and xmvol <= &HCF
+                    xmvoldat = (xmvol -&HC0)
+                    xmvol = 2
+                    'Set Panning
+                    IF ctype(i) <> 0 AND ctype(i) <> 2 THEN
+                        PRINT "WARNING: Panning on PSG or Noise channel! Ignoring..."
+                    ELSE
+                        if ctype(i) = 2 then put #20, , chr(&hf6) else PUT #20, , chr(esfchan(i) + &hF0)            
+                        IF xmvoldat = &h08 THEN
+                            PUT #20, , chr(&hC0)
+                        ELSEIF xmvoldat > &h08 THEN
+                            PUT #20, , chr(&h40)
+                        ELSE
+                            PUT #20, , chr(&h80)
+                        END IF
+                    END IF
+                END IF
+                    
+                
                 IF effectdat(i) <> 255 THEN
                     lastfx(i) = effectdat(i)
                     lastfd(i) = effectval(i)
@@ -930,7 +982,7 @@ END FUNCTION
                                         PUT #20, , chr(INT(esfins(curins(i))))
                                 END IF
 
-                                IF (xmeff <> 3) AND (xmeff <> &hc) THEN
+                                IF (xmeff <> 3) AND (xmeff <> &hc) and (xmvol <> 1) THEN
                                               curvol(i) = 64
                                               PUT #20, , chr(esfchan(i) + &h20)
 
