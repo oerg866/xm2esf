@@ -9,6 +9,9 @@ xm2esf changelog                    MM-DD-YYYY
 
   Eh, whatever volume slides work 100% properly for the first time ever!!
 - !! XM to FM volume forumla is now 100% accurate
+
+  Super-special thanks to Tiido (TmEE) for the formula!!!
+
 - Fixed pitch related effects not carrying on after empty rows inbetween... again.
 - Lots of code cleanup
 - Fixed PSG Noise modes being reversed...
