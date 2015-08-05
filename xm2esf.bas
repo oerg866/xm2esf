@@ -1,5 +1,31 @@
 #INCLUDE "fbmath.bi"
 
+#MACRO WriteNote(a)
+    
+    IF ctype(i) = 0 THEN
+        curfreq(i) = fmfreq(a)
+        PUT #20, , chr(esfchan(i) + &h30)
+        PUT #20, , chr(INT(curfreq(i) / 256))
+        PUT #20, , chr(INT(curfreq(i) MOD 256))
+    else
+        curfreq(i) = INT((0.5^((a)/12-1))/2*851) 
+        if ctype(i) = 3 and noisetype = 0 then PUT #20, , chr(&h3A) else PUT #20, , chr(esfchan(i) + &h30)
+        PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))                       
+    end if
+                    
+#ENDMACRO
+
+#MACRO WriteCurrentFreq()
+IF ctype(i) = 0 THEN
+    PUT #20, , chr(esfchan(i) + &h30)
+    PUT #20, , chr(INT(curfreq(i) / 256))
+    PUT #20, , chr(INT(curfreq(i) MOD 256))
+ELSE
+    if ctype(i) = 3 and noisetype = 0 then PUT #20, , chr(&h3A) else PUT #20, , chr(esfchan(i) + &h30)
+    PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))
+END IF
+#ENDMACRO
+
 TYPE PATTERNDATA
     note AS STRING * 1
     INST AS STRING * 1
@@ -82,37 +108,31 @@ FUNCTION DIVREST(a as double, b as integer) as DOUBLE
     dim i as integer
     last = 0
     for i = 0 to a step 1 
-        if i / b - int(i / b) = 0 then
+        if i / b - int(i / b) = 0  and  i <= a then
         last = i
-        end if        
+    end if  
     next i
     divrest = a - last
 END FUNCTION
 
-FUNCTION fmfreq(a AS DOUBLE) AS INTEGER
-    dim temp2 as double
-    dim temp as long
-    temp2 = INT(644*(2^(divrest(a,12)/12)))
-    temp = INT(a/12) * 2048  
-    temp2 = int((temp2 AND 2047) + temp)
-    return temp2
-END FUNCTION
-
-
-FUNCTION fmfreq2(a AS LONG   ) AS INTEGER
+FUNCTION fmfreq(a AS double) AS INTEGER
     dim temp2 as long
-    dim temp as long       
+    dim temp as long  
     temp2 = INT(644*(2^(divrest(a,12)/12)))
     temp = ((INT(a/12)) * 2048)
     temp2 = INT((temp2 AND 2047) + temp)
     return temp2
 END FUNCTION
 
+FUNCTION fmfreq2(a AS integer) AS INTEGER
+    fmfreq2 = fmfreq(cast(double,a))
+END FUNCTION
 
 FUNCTION fmvol(a AS DOUBLE) AS BYTE
 
     DIM b AS INTEGER
-    b = -(INT(LOG10(a / 63.0) * 63))
+    b = &H7F - int(log10(a * 9.0 / 64 + 1.0) * &H7F + 0.5)
+    print "FMVOL : ";b
     IF b > 127 THEN b = 127
     IF b < 0 THEN b = 0
     IF a = 64 THEN b = 0
@@ -125,7 +145,8 @@ END FUNCTION
 FUNCTION fmvol2(a AS INTEGER) AS BYTE
 
     DIM b AS INTEGER
-    b =  -(INT(LOG10(a / 63.0) * 63))
+    b = &H7F -  int(log10(a * 9.0 / 64  + 1.0) * &H7F + 0.5)
+    print "FMVOL : ";b
     IF b > 127 THEN b = 127
     IF b < 0 THEN b = 0
     IF a = 64 THEN b = 0
@@ -138,7 +159,7 @@ END FUNCTION
 FUNCTION psgvol(a AS DOUBLE) AS BYTE
 
     DIM b AS INTEGER
-    b =   -(INT(LOG10(a / 63.0) * 7))
+    b =   -(INT(LOG10(a / 64.0) * 7))
 
 
     IF b > 15 THEN b = 15
@@ -151,7 +172,7 @@ END FUNCTION
 FUNCTION psgvol2(a AS INTEGER) AS BYTE
 
     DIM b AS INTEGER
-    b =   -(INT(LOG10(a / 63.0) * 7))
+    b =   -(INT(LOG10(a / 64.0) * 7))
 
     IF b > 15 THEN b = 15
     IF a = 64 THEN b = 0
@@ -159,8 +180,6 @@ FUNCTION psgvol2(a AS INTEGER) AS BYTE
     psgvol2 = b
 
 END FUNCTION
-
-
     '************************************
     '* XM2ESF                           *
     '************************************
@@ -169,11 +188,11 @@ END FUNCTION
     ' Echo Stream Format
     '
     ' VERSION:
-
+ 
     dim builddate as string
     dim version as string
-    builddate = "10-02-2012"
-    version = "1.00 RC3"
+    builddate = "10-20-2012"
+    version = "1.00 RC6"
 #IFDEF __FB_DOS__
     version = version + " DOS"
 #Endif
@@ -225,7 +244,7 @@ END FUNCTION
     SLEEP 1000
 
     IF COMMAND$ = "" THEN
-        PRINT "usage: xm2esf <infile> <outfile>"
+        PRINT "usage: xm2esf <infile> <outfile> -<switches>"
         PRINT ""
         PRINT "<infile>  is an XIF file. An XIF file is a descriptor"
         PRINT "          file that contains all the parameters which xm2esf will"
@@ -244,6 +263,11 @@ END FUNCTION
         PRINT "          it WILL BE OVERWRITTEN, even if you encounter a bug and the"
         PRINT "          conversion somehow fails ."
         PRINT ""
+        print "Switches:"
+        print ""
+        print "-r"
+        print ""
+        print "-p"
         PRINT ""
         PRINT "Bye :D!"
 
@@ -251,7 +275,28 @@ END FUNCTION
 
         END
     END IF
+    
+    dim cmdl as integer
+    
+    dim psgretrig as byte
+    dim psgretrigall as byte
+    dim psgignore as byte
 
+    for cmdl = 3 to 255
+        if command$(cmdl) = "" then exit for
+        select case lcase(command$(cmdl))
+        case "-r"
+            psgretrigall = 1
+        case "-p"
+            psgretrig = 1
+        case "-i"
+            psgignore = 1
+        end select
+    next cmdl
+    
+    print "psgretrigall ";psgretrigall
+    print "psgretrig ";psgretrig
+    print "psgignore  ";psgignore
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' INITIALIZE ALL VARIABLES
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -364,7 +409,7 @@ END FUNCTION
 
     DIM lastfx(1 TO 11) as long               ' Variables for picking up pitch related effects
     DIM lastfd(1 TO 11) as long               ' Variables for picking up pitch related effects
-
+    
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' INIT CODE BEGINS HERE :)
 
@@ -778,7 +823,7 @@ END FUNCTION
                     IF ctype(i) <> 0 AND ctype(i) <> 2 THEN
                         PRINT "WARNING: Panning on PSG or Noise channel! Ignoring..."
                     ELSE
-                        PUT #20, , chr(esfchan(i) + &hF0)                 '' 9-9-2011 this is teh bugfix for panning..... yah isux inorite?
+                        if ctype(i) = 2 then put #20, , chr(&hf6) else PUT #20, , chr(esfchan(i) + &hF0)            
                         IF xmeffdat = &h80 THEN
                             PUT #20, , chr(&hC0)
                         ELSEIF xmeffdat > &h80 THEN
@@ -841,14 +886,15 @@ END FUNCTION
                         effectdat(i) = xmeff
                         effectval(i) = xmeffdat
                         slidespeed(i) =  -((xmeff-1)*2-1) *xmeffdat
-                        slidetarget(i) = -(xmeff-2) * 96
+                        if xmeffdat = &HFF then print "initiating, speed:"; slidespeed(i); " step:"; slidestep(i) 
+                        slidetarget(i) = -(xmeff-2) * 96 
                 END IF
                 
 '''''''''''''''''''''''''''''''''''''''''''''''' Set current note variable
                 IF xmnote < 97 AND xmnote > 0 THEN  curnote(i) = xmnote + pitch(i)
 
 '''''''''''''''''''''''''''''''''''''''''''''''' Handle a <Note Off>
-                IF xmnote = 97 THEN
+                IF xmnote = 97 and ((ctype(i) = 0 or ctype(i) = 2) or ((ctype(i) = 1 or ctype(i) = 3) and psgignore <> 0)) THEN
                     PUT #20, , chr(esfchan(i)+&h10)
                 END IF
 '''''''''''''''''''''''''''''''''''''''''''''''' Handle a new note
@@ -861,25 +907,28 @@ END FUNCTION
                                         PUT #20, , chr(INT(esfins(curins(i))))
                                 END IF
 
-                                IF xmeff <> 3 AND xmeff <> &hc THEN
+                                IF (xmeff <> 3) AND (xmeff <> &hc) THEN
                                               curvol(i) = 64
                                               PUT #20, , chr(esfchan(i) + &h20)
 
                                               IF ctype(i) = 0 THEN
                                                      TEMP = INT(fmvol(quotient(i) * 64))
                                                      PUT #20, , chr(TEMP)
-                                              ELSE
+                                              ELSE 
                                                     TEMP = INT(psgvol(quotient(i) * 64))
                                                     PUT #20, , chr(TEMP)
                                               END IF
+                                                volslidepos(i) = curvol(i)
                                 END IF
 
                                 IF ctype(i) = 0 THEN
                                     PUT #20, , chr(esfchan(i))
                                     PUT #20, , chr(INT(32 * INT(curnote(i) / 12) + (2 * (curnote(i) MOD 12)) + 1))
+                                    curfreq(i) = fmfreq2(curnote(i))
                                 ELSEIF ctype(i) = 1 THEN
                                     PUT #20, , chr(esfchan(i))
                                     PUT #20, , chr(INT(24 * INT(curnote(i) / 12) + (2 * (curnote(i) MOD 12))))
+                                    curfreq(i) = INT((0.5^((curnote(i))/12-1))/2*851)
                                 ELSE
                                     tmp = 0
                                     IF noisetype = 1 THEN
@@ -896,7 +945,7 @@ END FUNCTION
                                         PUT #20, , chr(&h3A)
                                         PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))
                                         PUT #20, , chr(&hB)
-                                        IF noisemode = 1 THEN
+                                        IF noisemode = 0 THEN
                                             PUT #20, , chr(&h3)
                                         ELSE
                                             PUT #20, , chr(&h7)
@@ -911,6 +960,17 @@ END FUNCTION
                             PUT #20, , chr(esfins(curins(i)))
                     END IF
                 END IF
+'''''''''''''''''''''''''''''''''''''''''''''''' <Simulate XM Behavior>
+                if ((psgretrig = 1 and xmeff > 0 and xmeff < 5) or (psgretrigall = 1)) and xmins > 0 and (ctype(i) = 1) then'or ctype(i) = 3) then
+                    curins(i) = xmins
+                    print "RETRIGGER"
+                    PUT #20, , chr(&H40 + esfchan(i))
+                    PUT #20, , chr(INT(esfins(curins(i))))
+                    put #20, , chr(&H10 + esfchan(i))
+                    put #20, , chr(esfchan(i))
+                    put #20, , chr(0)
+                    WriteCurrentFreq()
+                end if
 '''''''''''''''''''''''''''''''''''''''''''''''' <XM Effect> Volume Slide
                 IF xmeff = &HA THEN
                     IF ctype(i) <> 2 THEN
@@ -925,10 +985,10 @@ END FUNCTION
                           ELSE
                               IF INT(xmeffdat MOD 16) > 0 THEN
                                   ' Volume slide DOWN
-                                  volslidespeed(i) = -(INT(xmeffdat MOD 16))
+                                  volslidespeed(i) = -(INT(xmeffdat MOD 16))*4
                                   effectval(i) = INT(xmeffdat MOD 16)
                               ELSEIF INT(xmeffdat / 16) > 0 THEN
-                                  volslidespeed(i) = INT(xmeffdat / 16)
+                                  volslidespeed(i) = INT(xmeffdat / 16) / 16 *4
                                   effectval(i) = INT(xmeffdat / 16)
                               END IF
                           END IF
@@ -942,19 +1002,22 @@ END FUNCTION
                     PUT #20, , chr(esfchan(i) + &H20)
                     TEMP = INT(fmvol(xmeffdat * quotient(i)))
                     PUT #20, , chr(TEMP)
+                    curvol(i) = xmeffdat
                  ELSEIF ctype(i)=1 THEN
                     effectdat(i)= &HC
                     effectval(i) = xmeffdat
                     PUT #20, , chr(esfchan(i) + &H20)
                     TEMP = INT(psgvol(xmeffdat * quotient(i)))
+                    print temp; i; esfchan(i)
                     PUT #20, , chr(TEMP)
-
+                    curvol(i) = xmeffdat
                  ELSEIF ctype(i) = 3 THEN
                     effectdat(i) = &HC
                     effectval(i) = xmeffdat
                     PUT #20, , chr(&h2B)
                     TEMP = INT(psgvol(xmeffdat * quotient(i)))
                     PUT #20, , chr(TEMP)
+                    curvol(i) = xmeffdat
                  ELSE
                     'ignore for pcm +noise
                     effectdat(i) = 255
@@ -982,16 +1045,7 @@ END FUNCTION
                                     CASE 2
                                         slidestep(i) = curnote(i) + arpnote2(i)
                                     END SELECT
-                                    IF ctype(i) = 0 THEN
-                                        curfreq(i) = fmfreq(slidestep(i))
-                                        PUT #20, , chr(esfchan(i) + &h30)
-                                        PUT #20, , chr(INT(curfreq(i) / 256))
-                                        PUT #20, , chr(INT(curfreq(i) MOD 256))
-                                    ELSE
-                                        curfreq(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
-                                        PUT #20, , chr(esfchan(i) + &h30)
-                                        PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))
-                                    END IF
+                                    WriteNote(slidestep(i))
                           END IF
                     END IF
                 CASE &hA
@@ -999,8 +1053,9 @@ END FUNCTION
                    IF pf < effectval(i)+1 THEN
                     IF ctype(i) <> 2 THEN
                             IF volslidepos(i) < 65 AND volslidepos(i) > 0 THEN
-                                volslidepos(i) = volslidepos(i) + volslidespeed(i)/TEMPo
+                                volslidepos(i) = volslidepos(i) + volslidespeed(i)
                                 IF volslidepos(i) < 0 THEN volslidepos(i) = 0
+                                if ctype(i) = 1 then  print volslidepos(i)  
                                curvol(i) = volslidepos(i)
 
                             ELSE
@@ -1013,74 +1068,26 @@ END FUNCTION
                                 PUT #20, , chr(fmvol(quotient(i) * volslidepos(i)))
 
                              ELSE
-                                IF ctype(i) = 3 THEN PUT #20, , chr(&H2A) ELSE PUT #20, , chr(esfchan(i) + &H20)
-                                PUT #20, , chr(psgvol(quotient(i) * volslidepos(i)))
+                                 IF ctype(i) = 3 THEN PUT #20, , chr(&H2A) ELSE PUT #20, , chr(esfchan(i) + &H20)
+                               
+                                                    TEMP = INT(psgvol(quotient(i) * curvol( i)))
+                                                    PUT #20, , chr(TEMP)
                              END IF
                             END IF
                     END IF
                    END IF
 
                 CASE 1 TO 3
-
-                    slidestep(i) = slidestep(i) + slidespeed(i) / 20
+                    if slidespeed(i) = -255 then print "SLIDESTEP: "; slidestep(i) 
+                    slidestep(i) = slidestep(i) + slidespeed(i) / 16
                     IF slidespeed(i) < 0 AND slidetarget(i) > slidestep(i) THEN slidestep(i) = slidetarget(i)
                     IF slidespeed(i) > 0 AND slidetarget(i) < slidestep(i) THEN slidestep(i) = slidetarget(i)
-
-                    IF ctype(i) = 0 THEN
-                     curfreq(i) = fmfreq(slidestep(i))
-                     PUT #20, , chr(esfchan(i) + &H30)
-                     TEMP = INT(curfreq(i) / 256 )
-                     PUT #20, , chr(TEMP)
-                     TEMP = INT(curfreq(i) MOD 256)
-                     PUT #20, , chr(TEMP)
-
-
-
-                    ELSEIF ctype(i) = 1 THEN
-
-                     curfreq(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
-                     PUT #20, , chr(esfchan(i) + &H30)
-                     TEMP = INT(curfreq(i) MOD 16)
-                     PUT #20, , chr(TEMP)
-                     TEMP = INT(curfreq(i) / 16)
-                     PUT #20, , chr(TEMP)
-
-                    ELSEIF ctype(i) = 3 THEN
-
-                    IF noisetype = 0 THEN
-                     curfreq(i) = INT((0.5^((slidestep(i))/12-1))/2*851)
-                     PUT #20, , chr(&h3A)    'PSG Channel 3
-                     TEMP = INT(curfreq(i) MOD 16)
-                     PUT #20, , chr(TEMP)
-                     TEMP = INT(curfreq(i) / 16)
-                     PUT #20, , chr(TEMP)
-
-
-                    END IF
-                   END IF
+                    WriteNote(slidestep(i))
                 CASE 4
                    vibstep(i) = vibstep(i) + vibspeed(i)*4
                    conversion = SIN(pi/180 * vibstep(i))*vibdepth(i)/5 + curnote(i)
                    slidestep(i) = conversion
-
-
-                   IF ctype(i) = 0 THEN
-                   curfreq(i) = INT(fmfreq(conversion))
-                                PUT #20, , chr(esfchan(i) + &h30)
-                                PUT #20, , chr(INT(curfreq(i) / 256))
-                                PUT #20, , chr(INT(curfreq(i) MOD 256))
-                   ELSEIF ctype(i) <> 2 THEN
-                   curfreq(i) = INT((0.5^((conversion)/12-1))/2*851)
-                                IF ctype(i) <> 3 THEN
-                                    PUT #20, , chr(esfchan(i) + &h30)
-                                            PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))
-                                ELSE
-                                    PUT #20, , chr(&h3A)
-                                            PUT #20, , chr(INT(curfreq(i) MOD 16)) + chr(INT(curfreq(i) / 16))
-                                END IF
-                   END IF
-
-
+                   WriteNote(slidestep(i))
                 END SELECT
             NEXT i
 
@@ -1091,7 +1098,7 @@ END FUNCTION
 
     IF esfloop = 0 THEN
         PUT #20, , chr(&hFF)
-    ELSE
+    ELSEif restart > 0 then
         ' Restore instruments on looping
         FOR i = 1 TO 11
             IF loopins(i) <> curins(i) AND i <> 10 THEN
@@ -1100,8 +1107,10 @@ END FUNCTION
             END IF
         NEXT i
         PUT #20, , chr(&hFC)
-    END IF
-
+    ELSE  
+        PUT #20, , chr(&hFC)        
+    end if
+    
     PRINT "Conversion done!"
 
     CLOSE
