@@ -1,6 +1,8 @@
-© 2010-2012 Eric Voirin  alias Oerg866
+© 2010-2015 Eric Voirin alias Oerg866
 
-This software is provided 'as-is', without any express or implied
+oerg866-at-tototek.com
+
+This software is provided 'as-is', without any expressed or implied
 warranty. In no event will the author be held liable for any damages
 arising from the use of this software.
 
@@ -12,6 +14,8 @@ freely, subject to the following restrictions:
    claim that you wrote the original software. If you use this software
    in a project, an acknowledgement in any form is appreciated, however
    not required
-2. Altered source versions must be plainly marked as such, and must give
+2. Altered source versions must be clearly marked as such, and must give
    credit to the author of this software for its original version.
-3. This notice may not be removed or altered from any source distribution.
+3. Commercial usage is prohibited unless personally cleared and negotiated
+   with the author.
+4. This notice may not be removed or altered from any source distribution.

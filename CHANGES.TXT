@@ -1,5 +1,46 @@
 xm2esf changelog                    MM-DD-YYYY
-                                
+
+== <xm2esf 1.1 Beta 2> ============ 08-06-2015
+- Fixed broken volume slides (esp. on PSG)
+  I made completely wrong assumptions about how volslides work. They just add/deduct the value every tick except
+  for the first one. I made a complete mess of it and thought it was much, much more complicated :P
+
+  Especially *upward* slides were broken in 1.1b.
+
+  Eh, whatever volume slides work 100% properly for the first time ever!!
+- !! XM to FM volume forumla is now 100% accurate
+- Fixed pitch related effects not carrying on after empty rows inbetween... again.
+- Lots of code cleanup
+- Fixed PSG Noise modes being reversed...
+- Added support for fine volume slides.
+
+  Sorry, I can't upload the bugfixed xm2esfgui yet because I seem to have lost the source code... :X
+  (To the bugfixed version I mean. Don't remember what exactly I fixed, but there were plenty of things)
+
+== <xm2esf 1.1 Beta> ============== 12-04-2014
+- Temporary preliminary code to support the volume column. This is very very unsafe and
+  probably best left to a night where I'm very, very bored ...
+
+== <xm2esf 1.00 RC7> ============== 03-30-2014
+- Added the capability of having a sync channel. In conjunction with a special echo version,
+  this would trigger a flag in Z80 memory when a note off was played on it, which can be used 
+  to sync a game or demo to the music.
+  This feature was used in 'overdrive' by Titan.
+- Partially reverted the broken volume slide behavior from RC6. 
+- Fixed a few xm2esfgui bugs. 
+
+== <xm2esf 1.00 RC6> ============== 10-20-2012
+- Converted duplicate frequency functions to casted copies
+- Fixed volume function inaccuracy in which they assumed the range was 0-63 when it is actually 0-64
+- Introduced two command line switches which enable envelope triggering when the instrument column
+  on a PSG channel isn't empty. Particularily applicable in the scenario when using a Portamento. 
+  In the XM, something like [C-5 12 -- 304] would retrigger instrument 12's volume envelope. 
+  In xm2esf that wasn't handled. It's still not handled by default, but the switches -r and -p allow it now.
+  Only applicable to PSG, obviously. 
+- Minor little fixes and tweaks
+- Changed volume slide behavior
+- Several instances of writing notes and frequencies converted to macros
+                              
 == <xm2esf 1.00 RC3> ============== 10-02-2012
 
 - Fixed an issue with the wrong or uninitialized note data as base on portamentos with note-on on the same row
