@@ -15,10 +15,10 @@ XM2ESF - XM to Echo Stream Format converter
 
 Beta Version
 
-Copyright (C) 2011-2015 Oerg866             http://www.mdscene.net
+Copyright (C) 2011-2018 Oerg866             
 Email: oerg866-at-tototek-dot-com           http://github.com/oerg866/xm2esf
 
-Echo (C) 2010-2015 Sik, Oerg866, TiTAN      http://echo.mdscene.net
+Echo (C) 2010-2018 Sik, Oerg866, TiTAN      http://github.com/sikthehedgehog/Echo
 
 Please report bugs using email at oerg866-at-tototek-dot-com or use any
 other viable method, such as forum threads, IRC, skype or similar.
@@ -49,7 +49,7 @@ usage: xm2esf <infile> <outfile> -<switches>
 <outfile> is the output path ad filename xm2esf will use to create
           the resulting ESF file. Please note that if this file exists
           it WILL BE OVERWRITTEN, even if you encounter a bug and the
-          conversion somehow fails .
+          conversion somehow fails.
 
 Switches:
 
@@ -57,6 +57,6 @@ Switches:
           is filled when there is one of the standard portamento/vibrato
           effects playing. (1xx, 2xx, 3xx and 4xx)
 -r        Like -p, except it triggers regardless of the effect column's
-          content.
-
+          content
+-i		  Ignore Note-Offs on PSG channels
 Bye :D!

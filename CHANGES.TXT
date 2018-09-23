@@ -1,4 +1,10 @@
-xm2esf changelog                    MM-DD-YYYY
+﻿xm2esf changelog                    MM-DD-YYYY
+
+== <xm2esf 1.1 Beta 3> ============ 09-22-2018
+
+- Fixed Note-Offs not working on PSG channels. Reason for this was code I added for a command line switch
+  that would have allowed that, but I got the condition wrong.
+  Thanks to Шиленко Михаил (Segaman) for reporting this bug!
 
 == <xm2esf 1.1 Beta 2> ============ 08-06-2015
 - Fixed broken volume slides (esp. on PSG)

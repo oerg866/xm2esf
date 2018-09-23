@@ -217,8 +217,8 @@ END FUNCTION
 
 dim builddate as string
 dim version as string
-builddate = "08-06-2015"
-version = "1.1 Beta 2"
+builddate = "09-22-2018"
+version = "1.1 Beta 3"
 #IFDEF __FB_DOS__
 version = version + " DOS"
 #Endif
@@ -230,9 +230,9 @@ version = version + " Linux"
 #Endif
 
 '
-' (C) 2009-2015 Oerg866
+' (C) 2009-2018 Oerg866
 '
-' Developed in compliance with official Echo docs. (C) 2010-2015 Sik, Oerg866, TiTAN
+' Developed in compliance with official Echo docs. (C) 2010-2018 Sik, Oerg866, TiTAN
 
 '
 RMDIR "./TEMP"
@@ -243,10 +243,10 @@ PRINT "XM2ESF - XM to Echo Stream Format converter"
 PRINT ""
 PRINT "Version " + version + " " + builddate
 PRINT ""
-PRINT "Copyright (C) 2011-2015 Oerg866             http://www.mdscene.net"
+PRINT "Copyright (C) 2011-2018 Oerg866"
 PRINT "Email: oerg866-at-tototek-dot-com           http://github.com/oerg866/xm2esf"
 PRINT ""
-PRINT "Echo (C) 2010-2015 Sik, Oerg866, TiTAN      http://echo.mdscene.net"
+PRINT "Echo (C) 2010-2018 Sik, Oerg866, TiTAN      http://github.com/sikthehedgehog/Echo"
 PRINT ""
 PRINT "Please report bugs using email at oerg866-at-tototek-dot-com or use any"
 PRINT "other viable method, such as forum threads, IRC, skype or similar."
@@ -285,7 +285,7 @@ IF COMMAND$ = "" THEN
     PRINT "<outfile> is the output path ad filename xm2esf will use to create"
     PRINT "          the resulting ESF file. Please note that if this file exists"
     PRINT "          it WILL BE OVERWRITTEN, even if you encounter a bug and the"
-    PRINT "          conversion somehow fails ."
+    PRINT "          conversion somehow fails."
     PRINT ""
     print "Switches:"
     print ""
@@ -293,7 +293,8 @@ IF COMMAND$ = "" THEN
     print "          is filled when there is one of the standard portamento/vibrato"
     print "          effects playing. (1xx, 2xx, 3xx and 4xx)"
     print "-r        Like -p, except it triggers regardless of the effect column's"
-    print "          content."
+    print "          content"
+	print "-i		 Ignore Note-Offs on PSG channels"
     PRINT ""
     PRINT "Bye :D!"
     
@@ -989,8 +990,10 @@ FOR currow = 1 TO total
             IF xmnote < 97 AND xmnote > 0 THEN  curnote(i) = xmnote + pitch(i)
             
             '''''''''''''''''''''''''''''''''''''''''''''''' Handle a <Note Off>
-            IF xmnote = 97 and ((ctype(i) = 0 or ctype(i) = 2) or ((ctype(i) = 1 or ctype(i) = 3) and psgignore <> 0)) THEN
-                PUT #20, , chr(esfchan(i)+&h10)
+            IF xmnote = 97 THEN
+				if not (((ctype(i) = 1) or (ctype(i) = 3)) and (psgignore)) then 
+					PUT #20, , chr(esfchan(i)+&h10)
+				end if
             END IF
             '''''''''''''''''''''''''''''''''''''''''''''''' Handle a new note
             IF xmnote > 0 AND xmnote < 97 THEN
